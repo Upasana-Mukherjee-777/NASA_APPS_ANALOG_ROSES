@@ -127,3 +127,4 @@ async def delete_hazard(hazard_id: str, db: AsyncSession = Depends(get_db)):
     h.is_active = False
     await db.commit()
     return {"status": "SUCCESS", "message": f"Hazard '{h.name}' marked inactive."}
+

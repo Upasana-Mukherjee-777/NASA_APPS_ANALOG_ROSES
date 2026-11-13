@@ -342,3 +342,4 @@ class TelemetrySimulator:
 
 # Global singleton instance for the session
 telemetry_engine = TelemetrySimulator(seed=42)
+

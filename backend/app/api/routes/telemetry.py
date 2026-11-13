@@ -73,3 +73,4 @@ async def clear_anomaly():
     """Clears any currently active anomaly in the simulation."""
     telemetry_engine.clear_anomaly()
     return {"status": "ANOMALY_CLEARED", "current_state": telemetry_engine.get_state()}
+

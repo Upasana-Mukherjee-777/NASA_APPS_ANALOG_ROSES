@@ -8,200 +8,196 @@ import {
   Play,
   Pause,
   RotateCcw,
-  Layers,
-  Activity,
-  ShieldAlert,
-  Navigation,
-  Clock,
-  Info,
-  Sliders,
-  Eye,
-  CheckCircle2,
-  TrendingUp,
   Sparkles,
-  Zap,
-  Split
+  ChevronRight,
+  Shield,
+  Layers,
+  Sliders,
+  Eye
 } from 'lucide-react'
-import { getDigitalTwinState, getMissionTimeline } from '@/services/api'
+import { getDigitalTwinState } from '@/services/api'
+import { useMission } from '@/context/MissionContext'
+import SimulatedBadge from '@/components/ui/SimulatedBadge'
+
+const TIMELINE_EVENTS = [
+  { step: 1, title: 'Base Egress', time: 'T+00h', desc: 'Perseverance departs Octavia Butler camp.' },
+  { step: 2, title: 'Séítah Crossing', time: 'T+01h', desc: 'Dune navigation with 8% wheel slip.' },
+  { step: 3, title: 'Delta Scarp Slide', time: 'T+02h', desc: 'Loose scree observed. Standoff deployed.' },
+  { step: 4, title: 'Reroute Detour', time: 'T+03h', desc: 'Aegis SafePath navigation activated.' },
+  { step: 5, title: 'Sampling Outcrop', time: 'T+04h', desc: 'Mudstone drill target acquired.' },
+]
 
 export default function DigitalTwinPage() {
-  const mountRef = useRef<HTMLDivElement>(null)
-  const sceneRef = useRef<THREE.Scene | null>(null)
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
-  const fogRef = useRef<THREE.FogExp2 | null>(null)
-  const sunLightRef = useRef<THREE.DirectionalLight | null>(null)
-  const roverRef = useRef<THREE.Mesh | null>(null)
+  const { playClick, playChime } = useMission()
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Simulation & Observation Slider
+  const [obsSplit, setObsSplit] = useState(50) // 0% = Before Observation, 100% = After Observation
+  const [currentStep, setCurrentStep] = useState(3)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [autoRotate, setAutoRotate] = useState(true)
+
+  // Three.js References
+  const roverMeshRef = useRef<THREE.Group | null>(null)
   const hazardConeRef = useRef<THREE.Mesh | null>(null)
-  const routeLineRef = useRef<THREE.Line | null>(null)
+  const terrainMeshRef = useRef<THREE.Mesh | null>(null)
 
-  // Simulation Reactive Inputs (Section 8 Requirement)
-  const [twinTemp, setTwinTemp] = useState<number>(-45.0)
-  const [twinRadiation, setTwinRadiation] = useState<number>(26.5)
-  const [twinDustTau, setTwinDustTau] = useState<number>(0.48)
-  const [orbitSpeed, setOrbitSpeed] = useState<number>(1.0)
-  const [isRotating, setIsRotating] = useState<boolean>(true)
-
-  // Comparison Mode: BEFORE OBSERVATION vs AFTER OBSERVATION
-  const [comparisonMode, setComparisonMode] = useState<'BEFORE' | 'AFTER'>('AFTER')
-
-  // Mission Timeline Replay Scrubber
-  const [timelineStep, setTimelineStep] = useState<number>(3)
-  const [isPlayingTimeline, setIsPlayingTimeline] = useState<boolean>(false)
-
-  const TIMELINE_STEPS = [
-    { step: 1, sol: 1084, time: 'T+00h 15m', title: 'Perseverance Egress & System Check', lat: 18.3800, lon: 77.5800, event: 'Egress from Base Camp. All PLSS loops nominal.' },
-    { step: 2, sol: 1084, time: 'T+01h 00m', title: 'South Séítah Margin Traversal', lat: 18.3920, lon: 77.5650, event: 'Crossed basaltic dune corridor with 8% wheel slip.' },
-    { step: 3, sol: 1084, time: 'T+02h 15m', title: 'Delta Scarp Hazard Detected', lat: 18.4050, lon: 77.5450, event: 'Unconsolidated scree slide observed. Stand-off barrier marked.' },
-    { step: 4, sol: 1084, time: 'T+03h 00m', title: 'Southern Detour & Smectite Approach', lat: 18.4140, lon: 77.5310, event: 'Aegis SafePath reroute around scarp executed.' },
-    { step: 5, sol: 1084, time: 'T+03h 45m', title: 'Delta Front Mudstone Outcrop Reached', lat: 18.4200, lon: 77.5200, event: 'Bedrock drilling target acquired. Sampling protocol ready.' }
-  ]
-
-  // Calculated Risk based on Reactive Inputs
-  const computedTwinRisk = Math.min(100, Math.round(
-    20 + (twinDustTau / 3.0) * 35 + (twinRadiation / 150.0) * 30 + (comparisonMode === 'AFTER' ? 10 : 0)
-  ))
-
-  // Three.js Scene Setup & Reactive Binding
   useEffect(() => {
-    if (!mountRef.current) return
-    const container = mountRef.current
+    if (!containerRef.current) return
+    const container = containerRef.current
     const width = container.clientWidth
-    const height = container.clientHeight || 550
+    const height = container.clientHeight
 
-    // 1. Scene & Atmosphere Fog
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x0a0c12)
-    const fog = new THREE.FogExp2(0x1a0f0a, 0.012)
-    scene.fog = fog
-    sceneRef.current = scene
-    fogRef.current = fog
+    scene.background = new THREE.Color(0x06070a)
+    scene.fog = new THREE.FogExp2(0x180d08, 0.015)
 
-    // 2. Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000)
-    camera.position.set(0, 30, 48)
-    camera.lookAt(0, -3, 0)
+    camera.position.set(0, 24, 38)
+    camera.lookAt(0, -2, 0)
 
-    // 3. Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setSize(width, height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    rendererRef.current = renderer
     container.innerHTML = ''
     container.appendChild(renderer.domElement)
 
-    // 4. Lighting
-    const ambientLight = new THREE.AmbientLight(0xffeedd, 0.45)
-    scene.add(ambientLight)
+    // Lighting
+    const ambient = new THREE.AmbientLight(0xffddbb, 0.5)
+    scene.add(ambient)
 
-    const sunLight = new THREE.DirectionalLight(0xffa550, 1.8)
-    sunLight.position.set(30, 45, 20)
-    scene.add(sunLight)
-    sunLightRef.current = sunLight
+    const sun = new THREE.DirectionalLight(0xffa040, 2.0)
+    sun.position.set(25, 40, 20)
+    scene.add(sun)
 
-    // 5. 3D Martian Terrain Geometry (Jezero Crater Basin & Delta Fan)
-    const gridSegments = 65
-    const terrainGeo = new THREE.PlaneGeometry(64, 64, gridSegments, gridSegments)
+    // Terrain Mesh with MOLA/Elevation heightfield
+    const segments = 60
+    const terrainGeo = new THREE.PlaneGeometry(55, 55, segments, segments)
     terrainGeo.rotateX(-Math.PI / 2)
 
     const pos = terrainGeo.attributes.position
     for (let i = 0; i < pos.count; i++) {
-      const vx = pos.getX(i)
-      const vz = pos.getZ(i)
-      const distFromCenter = Math.sqrt(vx * vx + vz * vz)
-
-      // Crater basin depression
-      let h = -3.8 + Math.pow(distFromCenter / 28, 2.2) * 5.2
-      // Western Delta Fan
-      if (vx < 0) {
-        h += Math.sin(vx * 0.18) * 2.2
-      }
-      // Micro ripples
-      h += Math.sin(vx * 0.7) * Math.cos(vz * 0.7) * 0.4
-      pos.setY(i, h)
+      const x = pos.getX(i)
+      const z = pos.getZ(i)
+      const dist = Math.sqrt(x * x + z * z)
+      let y = -3.5 + Math.pow(dist / 24, 2) * 4.5
+      if (x < 0) y += Math.sin(x * 0.2) * 2.0 // Delta fan
+      y += Math.sin(x * 0.8) * Math.cos(z * 0.8) * 0.3 // Regolith ripples
+      pos.setY(i, y)
     }
     terrainGeo.computeVertexNormals()
 
     const terrainMat = new THREE.MeshStandardMaterial({
       color: 0x9e431f,
-      roughness: 0.88,
-      metalness: 0.12,
-      flatShading: true
+      roughness: 0.85,
+      metalness: 0.1,
+      flatShading: true,
     })
-    const terrainMesh = new THREE.Mesh(terrainGeo, terrainMat)
-    scene.add(terrainMesh)
+    const terrain = new THREE.Mesh(terrainGeo, terrainMat)
+    scene.add(terrain)
+    terrainMeshRef.current = terrain
 
-    // Digital Grid Wireframe
-    const wireMat = new THREE.MeshBasicMaterial({ color: 0xea580c, wireframe: true, transparent: true, opacity: 0.14 })
-    const wireMesh = new THREE.Mesh(terrainGeo, wireMat)
-    scene.add(wireMesh)
+    // Wireframe overlay for digital twin aesthetic
+    const wireMat = new THREE.MeshBasicMaterial({ color: 0xea580c, wireframe: true, transparent: true, opacity: 0.15 })
+    const wireframe = new THREE.Mesh(terrainGeo, wireMat)
+    scene.add(wireframe)
 
-    // 6. Rover Object (Perseverance)
-    const roverGroup = new THREE.Group()
-    const bodyGeo = new THREE.BoxGeometry(2.4, 1.2, 3.0)
-    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.8, roughness: 0.2 })
-    const body = new THREE.Mesh(bodyGeo, bodyMat)
-    roverGroup.add(body)
+    // 3D Rover Model
+    const rover = new THREE.Group()
+    const chassis = new THREE.Mesh(
+      new THREE.BoxGeometry(2.2, 1.0, 2.8),
+      new THREE.MeshStandardMaterial({ color: 0xd4d4d8, metalness: 0.8, roughness: 0.2 })
+    )
+    rover.add(chassis)
 
-    const mastGeo = new THREE.CylinderGeometry(0.12, 0.12, 2.2)
-    const mastMat = new THREE.MeshBasicMaterial({ color: 0xffffff })
-    const mast = new THREE.Mesh(mastGeo, mastMat)
-    mast.position.set(0, 1.2, 1.0)
-    roverGroup.add(mast)
+    const mast = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.1, 1.8),
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    )
+    mast.position.set(0, 1.0, 0.8)
+    rover.add(mast)
 
-    roverGroup.position.set(4, -2.4, 3)
-    scene.add(roverGroup)
-    roverRef.current = roverGroup as any
+    rover.position.set(3, -1.8, 2)
+    scene.add(rover)
+    roverMeshRef.current = rover
 
-    // 7. Astronaut Markers (Sarah & Mark)
-    const astro1 = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 1.6), new THREE.MeshStandardMaterial({ color: 0x38bdf8 }))
-    astro1.position.set(7, -2.4, 4)
-    scene.add(astro1)
-
-    const astro2 = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 1.6), new THREE.MeshStandardMaterial({ color: 0xf59e0b }))
-    astro2.position.set(7.8, -2.4, 2.5)
-    scene.add(astro2)
-
-    // 8. Hazard Cone (Only visible in AFTER observation mode or high risk)
-    const hazardGeo = new THREE.ConeGeometry(3.5, 5.0, 16)
-    const hazardMat = new THREE.MeshBasicMaterial({ color: 0xef4444, wireframe: true, transparent: true, opacity: 0.6 })
+    // Pulsing 3D Volumetric Hazard Zone (Translucent Cone)
+    const hazardGeo = new THREE.CylinderGeometry(4.5, 0.1, 8.0, 32, 1, true)
+    const hazardMat = new THREE.MeshBasicMaterial({
+      color: 0xef4444,
+      transparent: true,
+      opacity: 0.45,
+      side: THREE.DoubleSide,
+    })
     const hazardCone = new THREE.Mesh(hazardGeo, hazardMat)
-    hazardCone.position.set(-11, 0.8, -7)
+    hazardCone.position.set(-6, 1.5, -4)
     scene.add(hazardCone)
     hazardConeRef.current = hazardCone
 
-    // 9. 3D Route Path Line
-    const routePoints = [
-      new THREE.Vector3(12, -2.8, 12),
-      new THREE.Vector3(6, -2.5, 6),
-      new THREE.Vector3(0, -2.2, 0),
-      new THREE.Vector3(-6, -1.8, -4),
-      new THREE.Vector3(-14, 0.2, -10)
-    ]
-    const routeGeo = new THREE.BufferGeometry().setFromPoints(routePoints)
-    const routeMat = new THREE.LineBasicMaterial({ color: 0x10b981, linewidth: 3 })
-    const routeLine = new THREE.Line(routeGeo, routeMat)
-    scene.add(routeLine)
-    routeLineRef.current = routeLine
+    // Interactive Drag to Rotate Camera
+    let isDragging = false
+    let prevMouseX = 0
+    let prevMouseY = 0
+    let theta = 0
+    let phi = 0.55
 
-    // Animation Render Loop
+    const onMouseDown = (e: MouseEvent) => {
+      isDragging = true
+      prevMouseX = e.clientX
+      prevMouseY = e.clientY
+    }
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return
+      const deltaX = e.clientX - prevMouseX
+      const deltaY = e.clientY - prevMouseY
+      prevMouseX = e.clientX
+      prevMouseY = e.clientY
+
+      theta -= deltaX * 0.006
+      phi = Math.max(0.2, Math.min(1.4, phi + deltaY * 0.006))
+
+      const radius = 45
+      camera.position.x = radius * Math.sin(phi) * Math.sin(theta)
+      camera.position.y = radius * Math.cos(phi)
+      camera.position.z = radius * Math.sin(phi) * Math.cos(theta)
+      camera.lookAt(0, -2, 0)
+    }
+
+    const onMouseUp = () => { isDragging = false }
+
+    renderer.domElement.addEventListener('mousedown', onMouseDown)
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+
+    // Animation Loop
     let animId: number
-    let angle = 0
     const animate = () => {
       animId = requestAnimationFrame(animate)
-      if (isRotating) {
-        angle += 0.0018 * orbitSpeed
-        camera.position.x = Math.sin(angle) * 46
-        camera.position.z = Math.cos(angle) * 46
-        camera.lookAt(0, -2.5, 0)
+
+      if (autoRotate && !isDragging) {
+        theta += 0.002
+        const radius = 45
+        camera.position.x = radius * Math.sin(phi) * Math.sin(theta)
+        camera.position.y = radius * Math.cos(phi)
+        camera.position.z = radius * Math.sin(phi) * Math.cos(theta)
+        camera.lookAt(0, -2, 0)
       }
+
+      // Pulse Hazard Cone Volume
+      if (hazardConeRef.current) {
+        const s = 1 + Math.sin(Date.now() * 0.004) * 0.15
+        hazardConeRef.current.scale.set(s, 1, s)
+      }
+
       renderer.render(scene, camera)
     }
     animate()
 
     const handleResize = () => {
-      if (!container) return
-      const w = container.clientWidth
-      const h = container.clientHeight || 550
+      if (!containerRef.current) return
+      const w = containerRef.current.clientWidth
+      const h = containerRef.current.clientHeight
       camera.aspect = w / h
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
@@ -209,317 +205,83 @@ export default function DigitalTwinPage() {
     window.addEventListener('resize', handleResize)
 
     return () => {
-      cancelAnimationFrame(animId)
       window.removeEventListener('resize', handleResize)
+      renderer.domElement.removeEventListener('mousedown', onMouseDown)
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+      cancelAnimationFrame(animId)
       renderer.dispose()
     }
-  }, [])
-
-  // Reactive updates to 3D Scene when environmental sliders change
-  useEffect(() => {
-    // 1. Dust concentration affects atmosphere fog & sun intensity
-    if (fogRef.current) {
-      fogRef.current.density = 0.01 + (twinDustTau / 3.0) * 0.035
-      // If high dust, shift fog to amber
-      if (twinDustTau > 1.2) {
-        fogRef.current.color.setHex(0x5c3311)
-      } else {
-        fogRef.current.color.setHex(0x1a0f0a)
-      }
-    }
-
-    if (sunLightRef.current) {
-      // Dust attenuates solar light
-      sunLightRef.current.intensity = Math.max(0.4, 2.0 - (twinDustTau / 2.0) * 1.2)
-    }
-
-    // 2. Comparison Mode: BEFORE vs AFTER
-    if (hazardConeRef.current) {
-      hazardConeRef.current.visible = comparisonMode === 'AFTER'
-    }
-  }, [twinDustTau, twinTemp, twinRadiation, comparisonMode])
-
-  // Timeline Step updates rover position
-  useEffect(() => {
-    if (roverRef.current) {
-      // Interpolate rover position across steps
-      const stepIdx = timelineStep - 1
-      const progress = stepIdx / 4.0
-      const x = 10 - progress * 22
-      const z = 10 - progress * 20
-      const y = -2.8 + progress * 2.8
-      roverRef.current.position.set(x, y, z)
-    }
-  }, [timelineStep])
-
-  // Play Timeline Animation
-  useEffect(() => {
-    if (!isPlayingTimeline) return
-    const interval = setInterval(() => {
-      setTimelineStep(s => {
-        if (s >= 5) {
-          setIsPlayingTimeline(false)
-          return 5
-        }
-        return s + 1
-      })
-    }, 2500)
-    return () => clearInterval(interval)
-  }, [isPlayingTimeline])
-
-  const curTimelineItem = TIMELINE_STEPS[timelineStep - 1]
+  }, [autoRotate])
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 font-mono">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-xs uppercase tracking-wider text-orange-400 font-semibold">
-              MODULE 9: INTERACTIVE 3D DIGITAL TWIN & COMPARISON ENGINE
-            </span>
-            <span className="text-xs text-zinc-400 font-mono">• Three.js WebGL Terrain</span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white mt-1">
-            3D Martian Digital Twin
-          </h1>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            Physics-reactive virtual twin of Jezero Crater. Dynamically responds to temperature, dust optical depth, and radiation scenarios with Before-and-After observation comparison.
-          </p>
-        </div>
+    <div className="relative w-full h-[calc(100vh-6rem)] min-h-[640px] overflow-hidden flex flex-col justify-between bg-black">
+      {/* 3D WebGL Canvas */}
+      <div ref={containerRef} className="absolute inset-0 cursor-grab active:cursor-grabbing select-none" />
 
-        {/* Comparison Mode Switcher: BEFORE vs AFTER (Section 8 Requirement) */}
-        <div className="flex items-center rounded-xl border border-zinc-800 bg-zinc-900/90 p-1.5 text-xs font-mono">
-          <span className="text-zinc-500 text-[10px] px-2 hidden sm:inline">STATE:</span>
-          <button
-            onClick={() => setComparisonMode('BEFORE')}
-            className={`px-3 py-1.5 rounded-lg transition ${
-              comparisonMode === 'BEFORE'
-                ? 'bg-zinc-700 text-white font-bold shadow'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            Pre-EVA Baseline
-          </button>
-          <button
-            onClick={() => setComparisonMode('AFTER')}
-            className={`px-3 py-1.5 rounded-lg transition ${
-              comparisonMode === 'AFTER'
-                ? 'bg-orange-600 text-white font-bold shadow'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            Astronaut-Updated (+Hazards)
-          </button>
+      {/* Prominent SIMULATED Digital Twin Ribbon */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-500/50 bg-amber-950/80 backdrop-blur-xl shadow-2xl text-amber-300 font-mono text-[11px] font-bold">
+          <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+          <span>SIMULATED 3D DIGITAL TWIN — SYNTHETIC HAZARD VOLUMES</span>
         </div>
       </div>
 
-      {/* Main 3D Canvas with HUD */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left 8 Columns: 3D WebGL Canvas */}
-        <div className="lg:col-span-8 space-y-3">
-          <div className="relative w-full h-[540px] rounded-2xl border border-zinc-800 bg-[#090b10] overflow-hidden shadow-2xl">
-            {/* Mount for Three.js */}
-            <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
-
-            {/* Top-Left Floating State Badge */}
-            <div className="absolute top-4 left-4 rounded-xl border border-zinc-800 bg-zinc-950/85 p-3 text-xs font-mono backdrop-blur-md space-y-1">
-              <div className="flex items-center gap-2">
-                <span className={`h-2.5 w-2.5 rounded-full ${comparisonMode === 'AFTER' ? 'bg-orange-500 animate-pulse' : 'bg-zinc-500'}`}></span>
-                <span className="font-bold text-white uppercase">{comparisonMode} OBSERVATION MODE</span>
-              </div>
-              <div className="text-[10px] text-zinc-400">
-                {comparisonMode === 'AFTER'
-                  ? 'Active hazards displayed. Southern detour route highlighted.'
-                  : 'Pre-flight planning datum. Unmapped scree hazard hidden.'}
-              </div>
-            </div>
-
-            {/* Top-Right Camera / Rotation Control */}
-            <div className="absolute top-4 right-4 flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950/85 p-1.5 text-xs font-mono backdrop-blur-md">
-              <button
-                onClick={() => setIsRotating(!isRotating)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
-                  isRotating ? 'bg-orange-600 text-white' : 'bg-zinc-800 text-zinc-400'
-                }`}
-              >
-                {isRotating ? 'Orbiting' : 'Paused Orbit'}
-              </button>
-              <button
-                onClick={() => setOrbitSpeed(s => s === 1 ? 2.5 : 1)}
-                className="px-2 py-1 rounded-lg bg-zinc-800 text-zinc-300 text-[11px]"
-              >
-                {orbitSpeed}x
-              </button>
-            </div>
-
-            {/* Bottom Floating Telemetry Bar */}
-            <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950/90 p-3 text-xs font-mono backdrop-blur-md">
-              <div className="flex flex-wrap items-center gap-4">
-                <div>
-                  <span className="text-zinc-500 text-[10px] block">ATMOSPHERE FOG</span>
-                  <span className="text-amber-400 font-bold">{twinDustTau} Tau ({twinDustTau > 1.2 ? 'Heavy Dust' : 'Clear'})</span>
-                </div>
-                <div>
-                  <span className="text-zinc-500 text-[10px] block">TEMP / RAD</span>
-                  <span className="text-cyan-400 font-bold">{twinTemp}°C • {twinRadiation} μSv/h</span>
-                </div>
-                <div>
-                  <span className="text-zinc-500 text-[10px] block">TWIN RISK</span>
-                  <span className={`font-bold ${computedTwinRisk > 50 ? 'text-red-400' : 'text-emerald-400'}`}>
-                    {computedTwinRisk}% ({computedTwinRisk > 50 ? 'ELEVATED' : 'NOMINAL'})
-                  </span>
-                </div>
-              </div>
-
-              <span className="text-[10px] text-zinc-500 hidden sm:inline">
-                Three.js WebGL Engine • Jezero MOLA Geometry
-              </span>
-            </div>
+      {/* Top Slider: Before vs After Observation */}
+      <div className="relative z-20 p-4 max-w-xl mx-auto w-full pointer-events-auto">
+        <div className="rounded-2xl border border-white/15 bg-zinc-950/85 backdrop-blur-2xl p-3 shadow-xl glass-panel">
+          <div className="flex items-center justify-between text-[11px] font-mono mb-1.5">
+            <span className="text-zinc-400">◄ PRIOR RECON (ORBITAL)</span>
+            <span className="text-white font-bold">TERRAIN OBSERVATION SPLIT</span>
+            <span className="text-cyan-400 font-bold">IN-SITU OBSERVATION (LIDAR) ►</span>
           </div>
-
-          {/* Timeline Replay Scrubber (Section 8 Requirement) */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 space-y-3 font-mono">
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-orange-400" />
-                <span className="font-bold text-white uppercase">Mission Timeline Replay Engine</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsPlayingTimeline(!isPlayingTimeline)}
-                  className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold transition ${
-                    isPlayingTimeline ? 'bg-amber-600 text-white' : 'bg-emerald-600 text-white'
-                  }`}
-                >
-                  {isPlayingTimeline ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                  <span>{isPlayingTimeline ? 'Pause Replay' : 'Play Timeline'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Scrubber Range */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-[11px] text-zinc-400">
-                <span>Step {curTimelineItem.step} of 5: <strong>{curTimelineItem.time}</strong></span>
-                <span className="text-orange-400 font-bold">{curTimelineItem.title}</span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                step="1"
-                value={timelineStep}
-                onChange={(e) => setTimelineStep(parseInt(e.target.value))}
-                className="w-full accent-orange-500 cursor-pointer h-2 bg-zinc-800 rounded-lg"
-              />
-            </div>
-
-            <p className="text-xs text-zinc-300 bg-zinc-950 p-2.5 rounded-lg border border-zinc-800/80">
-              {curTimelineItem.event}
-            </p>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={obsSplit}
+            onChange={e => setObsSplit(Number(e.target.value))}
+            className="w-full accent-orange-500 cursor-pointer h-2 bg-zinc-800 rounded-lg"
+          />
+          <div className="flex justify-between text-[9px] font-mono text-zinc-400 mt-1">
+            <span>Coarse DEM (50m)</span>
+            <span className="text-orange-400 font-bold">Split: {obsSplit}%</span>
+            <span>Micro-Topography (0.2m)</span>
           </div>
         </div>
+      </div>
 
-        {/* Right 4 Columns: Interactive Environmental State Controls */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-              <div className="flex items-center gap-2 text-sm font-bold text-white">
-                <Sliders className="h-4 w-4 text-orange-400" />
-                <span>Simulation Reaction Controls</span>
-              </div>
-              <span className="text-[10px] text-zinc-500">LIVE OVERLAYS</span>
-            </div>
-
-            <p className="text-xs text-zinc-400">
-              Manipulating these variables immediately alters the 3D WebGL atmosphere fog, sunlight attenuation, hazard cone shaders, and risk state.
-            </p>
-
-            <div className="space-y-4 text-xs">
-              {/* Dust Concentration (Changes 3D Fog) */}
-              <div className="space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-zinc-400">Dust Opacity (τ):</span>
-                  <span className={`font-bold ${twinDustTau > 1.2 ? 'text-amber-400' : 'text-zinc-200'}`}>
-                    {twinDustTau} Tau
-                  </span>
-                </div>
-                <input
-                  type="range" min="0.1" max="3.0" step="0.05"
-                  value={twinDustTau}
-                  onChange={(e) => setTwinDustTau(parseFloat(e.target.value))}
-                  className="w-full accent-amber-500 cursor-pointer h-1.5 bg-zinc-800 rounded"
-                />
-                <span className="text-[10px] text-zinc-500 block text-right">Directly drives WebGL atmospheric density</span>
-              </div>
-
-              {/* Radiation Exposure (Changes Shaders) */}
-              <div className="space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-zinc-400">Radiation Intensity:</span>
-                  <span className={`font-bold ${twinRadiation > 80 ? 'text-red-400' : 'text-zinc-200'}`}>
-                    {twinRadiation} μSv/h
-                  </span>
-                </div>
-                <input
-                  type="range" min="10" max="180" step="5"
-                  value={twinRadiation}
-                  onChange={(e) => setTwinRadiation(parseFloat(e.target.value))}
-                  className="w-full accent-red-500 cursor-pointer h-1.5 bg-zinc-800 rounded"
-                />
-              </div>
-
-              {/* Surface Temperature */}
-              <div className="space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-zinc-400">Surface Temperature:</span>
-                  <span className="text-blue-400 font-bold">{twinTemp}°C</span>
-                </div>
-                <input
-                  type="range" min="-85" max="5" step="1"
-                  value={twinTemp}
-                  onChange={(e) => setTwinTemp(parseFloat(e.target.value))}
-                  className="w-full accent-blue-500 cursor-pointer h-1.5 bg-zinc-800 rounded"
-                />
-              </div>
-            </div>
-
-            {/* Quick Scenario Injectors for Judges */}
-            <div className="pt-3 border-t border-zinc-800 space-y-2">
-              <span className="text-[10px] text-zinc-500 block uppercase">Quick Scenario Overlays</span>
-              <button
-                onClick={() => {
-                  setTwinDustTau(2.4)
-                  setTwinTemp(-52.0)
-                  setComparisonMode('AFTER')
-                }}
-                className="w-full p-2 rounded-lg border border-amber-800/80 bg-amber-950/30 text-amber-300 hover:bg-amber-900/40 text-xs text-left transition"
-              >
-                🌪️ Inject Dust Storm Over Jezero Delta
-              </button>
-              <button
-                onClick={() => {
-                  setTwinRadiation(140.0)
-                  setComparisonMode('AFTER')
-                }}
-                className="w-full p-2 rounded-lg border border-red-800/80 bg-red-950/30 text-red-300 hover:bg-red-900/40 text-xs text-left transition"
-              >
-                ☢️ Inject Solar Particle Flare (SPE)
-              </button>
-              <button
-                onClick={() => {
-                  setTwinDustTau(0.48)
-                  setTwinRadiation(26.5)
-                  setTwinTemp(-45.0)
-                  setComparisonMode('BEFORE')
-                }}
-                className="w-full p-2 rounded-lg border border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 text-xs text-left transition"
-              >
-                ✓ Restore Nominal Pre-EVA State
-              </button>
-            </div>
+      {/* Bottom Replay & Timeline Bar */}
+      <div className="relative z-20 p-4 max-w-3xl mx-auto w-full pointer-events-auto">
+        <div className="rounded-3xl border border-white/15 bg-zinc-950/90 backdrop-blur-2xl p-4 shadow-2xl glass-panel">
+          {/* Timeline Step Indicators */}
+          <div className="grid grid-cols-5 gap-2 mb-3">
+            {TIMELINE_EVENTS.map(evt => {
+              const isCurrent = evt.step === currentStep
+              return (
+                <button
+                  key={evt.step}
+                  onClick={() => {
+                    playClick()
+                    setCurrentStep(evt.step)
+                  }}
+                  className={`p-2 rounded-xl border text-left transition-all touch-react ${
+                    isCurrent
+                      ? 'border-orange-500 bg-orange-950/60 shadow-lg shadow-orange-950/30'
+                      : 'border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800'
+                  }`}
+                >
+                  <span className="text-[9px] font-mono text-orange-400 block">{evt.time}</span>
+                  <span className="text-xs font-bold text-white block truncate">{evt.title}</span>
+                </button>
+              )
+            })}
           </div>
+
+          {/* Current Event Description (<40 words) */}
+          <p className="text-xs text-zinc-300 font-sans text-center">
+            {TIMELINE_EVENTS[currentStep - 1]?.desc}
+          </p>
         </div>
       </div>
     </div>

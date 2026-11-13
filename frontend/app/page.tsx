@@ -1,236 +1,404 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import * as THREE from 'three'
 import {
-  ShieldAlert,
   Compass,
-  Route,
-  UserCheck,
-  Brain,
-  History,
-  FlaskConical,
-  Activity,
-  Box,
-  Database,
-  FileSpreadsheet,
-  ArrowRight,
-  ExternalLink,
-  CheckCircle2,
-  AlertTriangle,
-  Flame,
-  Radio,
-  Play
+  Play,
+  Sparkles,
+  MapPin,
+  ChevronRight,
+  Shield,
+  Layers,
+  Info,
+  RotateCw,
+  Eye,
+  Award
 } from 'lucide-react'
+import { useMission } from '@/context/MissionContext'
+import SimulatedBadge from '@/components/ui/SimulatedBadge'
 
-export default function LandingPage() {
-  const PILLARS = [
-    {
-      num: "01",
-      title: "Mission Control Centre (MCC)",
-      desc: "Live operational telemetry command centre. Multi-variable Recharts graphs for 8 live parameters, start/pause controls, and anomaly injection.",
-      link: "/overview",
-      tag: "Live Telemetry"
-    },
-    {
-      num: "02",
-      title: "Interactive Martian Explorer",
-      desc: "Multi-layered GIS mapping across Jezero Crater featuring 8 NASA scientific data overlays, pan/zoom, manual hazard placement, and elevation profiling.",
-      link: "/explorer",
-      tag: "8 NASA Layers"
-    },
-    {
-      num: "03",
-      title: "Mars Mission Simulator",
-      desc: "Dedicated mission simulation platform. Manipulate 11 environmental sliders, inject dynamic contingencies, and watch computational AI responses.",
-      link: "/simulation",
-      tag: "Live Simulation"
-    },
-    {
-      num: "04",
-      title: "Route Comparison Lab",
-      desc: "Constrained multi-objective cost optimization J = αR + βC + γT. Enforces non-negotiable slope and radiation safety constraints across 3 candidate routes.",
-      link: "/planner",
-      tag: "A* Optimization"
-    },
-    {
-      num: "05",
-      title: "AI Risk Intelligence Dashboard",
-      desc: "Dynamic multi-factor risk computation. Real-time parameter modifications, feature importance charts, and explainable safety decision rationales.",
-      link: "/risk",
-      tag: "Dynamic ML"
-    },
-    {
-      num: "06",
-      title: "Martian Experiment Lab",
-      desc: "7 scientific experiment templates, AI intervention classifier (Class A to D), live execution simulation, and human approval workflow.",
-      link: "/experiments",
-      tag: "Class A-D AI"
-    },
-    {
-      num: "07",
-      title: "Historical Safety Intelligence (RAG)",
-      desc: "Semantic retrieval of documented NASA mishap reports (Apollo 15 fatigue, Apollo 17 dust, ISS EVA 23 water leak) with explicit Martian transferability limits.",
-      link: "/history",
-      tag: "NASA Documents"
-    },
-    {
-      num: "08",
-      title: "3D Martian Digital Twin",
-      desc: "Interactive 3D virtual environment combining terrain elevation grid, rover tracking, astronaut positions, hazards, and mission event timeline replay.",
-      link: "/digital-twin",
-      tag: "Three.js 3D Engine"
+interface Hotspot {
+  name: string
+  subtitle: string
+  lat: number
+  lon: number
+  elevation: string
+  priority: string
+  rover: string
+  image: string
+  credit: string
+  targetPath: string
+}
+
+const MARTIAN_HOTSPOTS: Hotspot[] = [
+  {
+    name: 'Jezero Crater',
+    subtitle: 'Primary Exploration Corridor (EVA-07)',
+    lat: 18.38,
+    lon: 77.58,
+    elevation: '-2,548 m MOLA',
+    priority: 'PRIMARY TARGET',
+    rover: 'Perseverance & Ingenuity (Mars 2020)',
+    image: '/assets/nasa/PIA24331.jpg',
+    credit: 'NASA/JPL-Caltech/MRO HiRISE',
+    targetPath: '/explorer',
+  },
+  {
+    name: 'Olympus Mons',
+    subtitle: "Solar System's Largest Shield Volcano",
+    lat: 18.65,
+    lon: -133.8,
+    elevation: '+21,229 m MOLA',
+    priority: 'HIGH PRIORITY',
+    rover: 'Mars Global Surveyor / MRO CTX',
+    image: '/assets/nasa/PIA24096.jpg',
+    credit: 'NASA/GSFC/MOLA Science Team',
+    targetPath: '/explorer',
+  },
+  {
+    name: 'Valles Marineris',
+    subtitle: '4,000 km Planetary Grand Canyon',
+    lat: -13.9,
+    lon: -59.2,
+    elevation: '-7,000 m MOLA Depth',
+    priority: 'STRATEGIC SURVEY',
+    rover: '2001 Mars Odyssey THEMIS',
+    image: '/assets/nasa/PIA24745.jpg',
+    credit: 'NASA/JPL/ASU',
+    targetPath: '/explorer',
+  },
+  {
+    name: 'Gale Crater',
+    subtitle: 'Mount Sharp Layered Sulfate Deposits',
+    lat: -5.4,
+    lon: 137.8,
+    elevation: '-4,450 m MOLA',
+    priority: 'SCIENCE ARCHIVE',
+    rover: 'Curiosity (MSL)',
+    image: '/assets/nasa/PIA24927.jpg',
+    credit: 'NASA/JPL-Caltech/MSSS',
+    targetPath: '/explorer',
+  },
+]
+
+export default function MarsGlobeHomePage() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+  const { playClick, playChime, missionXP } = useMission()
+  const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null)
+  const [isRotating, setIsRotating] = useState(true)
+
+  // Three.js Scene References
+  const sceneRef = useRef<THREE.Scene | null>(null)
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
+  const globeRef = useRef<THREE.Mesh | null>(null)
+  const markerMeshesRef = useRef<THREE.Mesh[]>([])
+  const targetRotationRef = useRef<{ x: number; y: number } | null>(null)
+
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const container = containerRef.current
+    const width = container.clientWidth
+    const height = container.clientHeight
+
+    // Scene setup
+    const scene = new THREE.Scene()
+    sceneRef.current = scene
+
+    // Camera setup
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000)
+    camera.position.set(0, 0, 3.8)
+    cameraRef.current = camera
+
+    // Renderer setup
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+    renderer.setSize(width, height)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.toneMappingExposure = 1.1
+    container.innerHTML = ''
+    container.appendChild(renderer.domElement)
+    rendererRef.current = renderer
+
+    // Starfield Background
+    const starGeometry = new THREE.BufferGeometry()
+    const starCount = 1800
+    const starPositions = new Float32Array(starCount * 3)
+    for (let i = 0; i < starCount * 3; i += 3) {
+      starPositions[i] = (Math.random() - 0.5) * 50
+      starPositions[i + 1] = (Math.random() - 0.5) * 50
+      starPositions[i + 2] = -Math.random() * 40 - 5
     }
-  ]
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3))
+    const starMaterial = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.035,
+      transparent: true,
+      opacity: 0.8,
+    })
+    const starField = new THREE.Points(starGeometry, starMaterial)
+    scene.add(starField)
+
+    // Lighting (Day/Night Terminator)
+    const sunLight = new THREE.DirectionalLight(0xfff3e6, 2.5)
+    sunLight.position.set(5, 2, 4)
+    scene.add(sunLight)
+
+    const ambientLight = new THREE.AmbientLight(0x1a2130, 0.45)
+    scene.add(ambientLight)
+
+    // Texture Loader for Mars
+    const textureLoader = new THREE.TextureLoader()
+    const marsTexture = textureLoader.load('/assets/nasa/mars_surface_texture.jpg')
+    const marsBump = textureLoader.load('/assets/nasa/mars_elevation_bump.jpg')
+
+    // Mars Sphere Geometry
+    const globeRadius = 1.25
+    const globeGeometry = new THREE.SphereGeometry(globeRadius, 64, 64)
+    const globeMaterial = new THREE.MeshStandardMaterial({
+      map: marsTexture,
+      bumpMap: marsBump,
+      bumpScale: 0.035,
+      roughness: 0.82,
+      metalness: 0.1,
+    })
+    const globe = new THREE.Mesh(globeGeometry, globeMaterial)
+    scene.add(globe)
+    globeRef.current = globe
+
+    // Atmosphere Glow Layer
+    const atmosphereGeometry = new THREE.SphereGeometry(globeRadius * 1.025, 48, 48)
+    const atmosphereMaterial = new THREE.MeshStandardMaterial({
+      color: 0xeb5e28,
+      transparent: true,
+      opacity: 0.15,
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending,
+    })
+    const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial)
+    scene.add(atmosphere)
+
+    // Helper: Convert Lat/Lon to Sphere Vector3
+    const latLonToVector3 = (lat: number, lon: number, r: number) => {
+      const phi = (90 - lat) * (Math.PI / 180)
+      const theta = (lon + 180) * (Math.PI / 180)
+      return new THREE.Vector3(
+        -r * Math.sin(phi) * Math.cos(theta),
+        r * Math.cos(phi),
+        r * Math.sin(phi) * Math.sin(theta)
+      )
+    }
+
+    // Hotspot Markers
+    markerMeshesRef.current = []
+    MARTIAN_HOTSPOTS.forEach((spot, idx) => {
+      const pos = latLonToVector3(spot.lat, spot.lon, globeRadius * 1.015)
+      const markerGeom = new THREE.SphereGeometry(0.038, 16, 16)
+      const markerMat = new THREE.MeshBasicMaterial({
+        color: idx === 0 ? 0xff4500 : 0x00f0ff,
+      })
+      const marker = new THREE.Mesh(markerGeom, markerMat)
+      marker.position.copy(pos)
+      marker.userData = { hotspot: spot }
+      globe.add(marker)
+      markerMeshesRef.current.push(marker)
+    })
+
+    // Raycasting for interactive clicks
+    const raycaster = new THREE.Raycaster()
+    const mouse = new THREE.Vector2()
+
+    const onPointerDown = (event: MouseEvent) => {
+      const rect = renderer.domElement.getBoundingClientRect()
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+
+      raycaster.setFromCamera(mouse, camera)
+      const intersects = raycaster.intersectObjects(markerMeshesRef.current)
+
+      if (intersects.length > 0) {
+        const clickedMarker = intersects[0].object as THREE.Mesh
+        const spot = clickedMarker.userData.hotspot as Hotspot
+        if (spot) {
+          playChime()
+          setSelectedHotspot(spot)
+          setIsRotating(false)
+        }
+      }
+    }
+
+    renderer.domElement.addEventListener('click', onPointerDown)
+
+    // Animation Loop
+    let animationId: number
+    const animate = () => {
+      animationId = requestAnimationFrame(animate)
+
+      if (globeRef.current && isRotating) {
+        globeRef.current.rotation.y += 0.002
+      }
+
+      // Hotspot pulsing animation
+      markerMeshesRef.current.forEach((m, i) => {
+        const scale = 1 + Math.sin(Date.now() * 0.005 + i) * 0.25
+        m.scale.set(scale, scale, scale)
+      })
+
+      renderer.render(scene, camera)
+    }
+    animate()
+
+    // Resize Handler
+    const handleResize = () => {
+      if (!containerRef.current) return
+      const w = containerRef.current.clientWidth
+      const h = containerRef.current.clientHeight
+      camera.aspect = w / h
+      camera.updateProjectionMatrix()
+      renderer.setSize(w, h)
+    }
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      renderer.domElement.removeEventListener('click', onPointerDown)
+      cancelAnimationFrame(animationId)
+      renderer.dispose()
+    }
+  }, [isRotating]) // eslint-disable-line
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 py-4 font-sans">
-      {/* Hero Section */}
-      <div className="relative rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900/90 via-zinc-950/80 to-zinc-950 p-8 md:p-12 overflow-hidden shadow-2xl">
-        <div className="absolute -right-20 -top-20 w-96 h-96 bg-orange-600/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-amber-600/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="relative w-full h-[calc(100vh-6rem)] min-h-[640px] flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#050608] via-[#090b12] to-[#040507]">
+      {/* 3D WebGL Mars Canvas */}
+      <div ref={containerRef} className="absolute inset-0 cursor-grab active:cursor-grabbing z-0" />
 
-        <div className="relative z-10 max-w-3xl space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-950/40 px-3.5 py-1 text-xs font-mono font-medium text-orange-400">
-            <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse"></span>
-            NASA SPACE APPS CHALLENGE: INTERPLANETARY SURVIVAL GUIDE — MARTIAN MAP
-          </div>
-
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-tight">
-            MARS-GUARD
-          </h1>
-          <p className="text-xl md:text-2xl font-light text-zinc-300">
-            Interactive Martian Mission Control & Simulation Platform.
-          </p>
-
-          <p className="text-sm md:text-base text-zinc-400 leading-relaxed">
-            Prioritising astronaut safety, physical comfort, and mission feasibility while enabling scientific discovery.
-            Connecting documented NASA spaceflight mishap experiences with live Martian environmental telemetry, constrained route pathfinding, real-time experiment simulation, and adaptive 3D digital twins.
-          </p>
-
-          {/* Quick Action Buttons */}
-          <div className="flex flex-wrap gap-3 pt-2 font-mono">
-            <Link
-              href="/simulation"
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 px-6 py-3.5 text-xs font-bold text-white shadow-lg hover:from-orange-500 hover:to-amber-500 transition glow-orange"
-            >
-              <Play className="h-4 w-4" />
-              <span>Launch Mars Mission Simulator</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-
-            <Link
-              href="/overview"
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-800 transition"
-            >
-              <Activity className="h-4 w-4 text-emerald-400" />
-              <span>Live Mission Control (MCC)</span>
-            </Link>
-
-            <Link
-              href="/explorer"
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-800 transition"
-            >
-              <Compass className="h-4 w-4 text-orange-400" />
-              <span>Interactive Map (8 Layers)</span>
-            </Link>
-
-            <Link
-              href="/digital-twin"
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/60 px-5 py-3.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 transition"
-            >
-              <Box className="h-4 w-4 text-cyan-400" />
-              <span>3D Digital Twin</span>
-            </Link>
-          </div>
+      {/* Floating Spatial HUD Overlay */}
+      <div className="absolute top-6 left-6 z-10 pointer-events-auto">
+        <div className="flex items-center gap-2 mb-2">
+          <SimulatedBadge type="REAL" />
+          <span className="text-[11px] font-mono text-zinc-400">Viking MOLA Orbit Mosaic</span>
         </div>
+        <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white drop-shadow-md">
+          PLANET MARS
+        </h1>
+        <p className="text-xs md:text-sm text-zinc-300 font-sans mt-1">
+          Pick a glowing hotspot to explore or initiate EVA-07.
+        </p>
       </div>
 
-      {/* Featured Demonstration Mission Banner */}
-      <div className="rounded-xl border border-amber-800/40 bg-gradient-to-r from-amber-950/30 to-zinc-900/40 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 font-mono">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-xs uppercase tracking-wider text-amber-400 font-semibold">Active Demonstration Sortie</span>
-            <span className="text-xs text-zinc-400">• Sol 1084</span>
-          </div>
-          <h2 className="text-xl font-bold text-white font-sans">EVA-07: Jezero Western Delta Exploration</h2>
-          <p className="text-xs text-zinc-400 max-w-2xl font-sans">
-            Two-person astronaut sortie (Sarah Chen, Dr. Mark Thorne) investigating ancient lake delta smectite mudstones,
-            navigating talus slope hazards, testing spacesuit cooling loops, and evaluating constrained routes.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/simulation"
-            className="rounded-lg bg-orange-600 px-4 py-2 text-xs font-bold text-white hover:bg-orange-500 transition shadow"
+      {/* Center Prompt when nothing is selected */}
+      {!selectedHotspot && (
+        <div className="absolute bottom-16 left-6 right-6 md:left-auto md:right-8 z-10 flex flex-wrap gap-3 items-center pointer-events-auto">
+          <button
+            onClick={() => {
+              playChime()
+              setSelectedHotspot(MARTIAN_HOTSPOTS[0])
+            }}
+            className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 text-white font-mono text-xs font-bold shadow-2xl hover:scale-105 transition glow-orange"
           >
-            Run EVA-07 Simulation
-          </Link>
+            <Play className="w-4 h-4 fill-current" />
+            <span>START EVA-07 JEZERO MISSION</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+
           <Link
-            href="/planner"
-            className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 transition"
+            href="/explorer"
+            onClick={playClick}
+            className="flex items-center gap-2 px-5 py-3.5 rounded-2xl border border-white/15 bg-zinc-900/80 backdrop-blur-md text-zinc-200 font-mono text-xs font-bold hover:bg-zinc-800 transition"
           >
-            Compare Routes
+            <Compass className="w-4 h-4 text-cyan-400" />
+            <span>FREE EXPLORE MAP</span>
           </Link>
-        </div>
-      </div>
 
-      {/* Core Architectural Pillars Grid */}
-      <div className="space-y-6">
-        <div>
-          <h3 className="text-2xl font-bold text-white">The Eight Core Interactive Modules</h3>
-          <p className="text-sm text-zinc-400">All modules are fully operational with mathematical models, AI classifiers, and live data telemetry.</p>
+          <button
+            onClick={() => {
+              playClick()
+              setIsRotating(!isRotating)
+            }}
+            className="p-3.5 rounded-2xl border border-white/10 bg-zinc-900/70 text-zinc-300 hover:text-white transition"
+            title={isRotating ? 'Pause Rotation' : 'Resume Rotation'}
+          >
+            <RotateCw className={`w-4 h-4 ${isRotating ? 'animate-spin' : ''}`} />
+          </button>
         </div>
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {PILLARS.map((pillar) => (
-            <Link
-              key={pillar.num}
-              href={pillar.link}
-              className="group rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-5 hover:border-orange-500/50 hover:bg-zinc-900 transition flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-bold text-orange-400">{pillar.num}</span>
-                  <span className="font-mono text-[10px] uppercase text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded border border-zinc-700/50">
-                    {pillar.tag}
-                  </span>
+      {/* Hotspot Cinematic Mission Hub Bottom Sheet */}
+      {selectedHotspot && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[94%] max-w-xl rounded-3xl border border-orange-500/40 bg-zinc-950/90 backdrop-blur-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-6 duration-300 glass-panel">
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            {/* Real NASA Imagery Thumbnail */}
+            <div className="relative w-full sm:w-44 h-32 rounded-2xl overflow-hidden border border-zinc-700 shrink-0">
+              <img
+                src={selectedHotspot.image}
+                alt={selectedHotspot.name}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-mono text-zinc-300">
+                {selectedHotspot.credit}
+              </div>
+            </div>
+
+            {/* Info and Actions */}
+            <div className="flex-1 space-y-2 w-full">
+              <div className="flex items-center justify-between">
+                <span className="px-2 py-0.5 rounded-md bg-orange-950 border border-orange-700/60 text-orange-400 text-[10px] font-mono font-bold">
+                  {selectedHotspot.priority}
+                </span>
+                <span className="text-[11px] font-mono text-zinc-400">
+                  {selectedHotspot.lat}°N, {selectedHotspot.lon}°E
+                </span>
+              </div>
+
+              <h2 className="text-xl font-black text-white tracking-tight">
+                {selectedHotspot.name}
+              </h2>
+              <p className="text-xs text-zinc-300 font-sans line-clamp-1">
+                {selectedHotspot.subtitle}
+              </p>
+
+              {/* Stats Bar */}
+              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-zinc-900/80 rounded-xl p-2 border border-zinc-800">
+                <div>
+                  <span className="text-zinc-500 block text-[9px]">ELEVATION</span>
+                  <span className="text-zinc-200 font-bold">{selectedHotspot.elevation}</span>
                 </div>
-                <h4 className="text-base font-semibold text-zinc-100 group-hover:text-orange-400 transition">
-                  {pillar.title}
-                </h4>
-                <p className="text-xs text-zinc-400 leading-relaxed font-sans">
-                  {pillar.desc}
-                </p>
+                <div>
+                  <span className="text-zinc-500 block text-[9px]">SPACECRAFT</span>
+                  <span className="text-cyan-300 font-bold truncate block">{selectedHotspot.rover}</span>
+                </div>
               </div>
 
-              <div className="pt-4 flex items-center text-xs font-semibold text-orange-400 group-hover:translate-x-1 transition font-mono">
-                <span>Access Module</span>
-                <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 pt-1">
+                <Link
+                  href={selectedHotspot.targetPath}
+                  onClick={playChime}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-mono text-xs font-bold shadow-lg transition"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>ENTER MISSION HUB</span>
+                </Link>
+                <button
+                  onClick={() => {
+                    playClick()
+                    setSelectedHotspot(null)
+                    setIsRotating(true)
+                  }}
+                  className="px-3 py-2.5 rounded-xl border border-zinc-700 text-zinc-400 hover:text-white font-mono text-xs transition"
+                >
+                  Close
+                </button>
               </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Differentiators & Scientific Integrity */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 md:p-8 space-y-6 font-mono">
-        <h3 className="text-xl font-bold text-white font-sans">Engineering Safeguards & Scientific Integrity</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-zinc-400 font-sans">
-          <div className="space-y-2 border-l-2 border-orange-500/60 pl-3">
-            <h4 className="font-semibold text-zinc-200 font-mono">Strict Provenance Tags</h4>
-            <p>Every piece of data is transparently flagged as <strong className="text-emerald-400 font-mono">OBSERVED</strong> (NASA sensor measurement), <strong className="text-cyan-400 font-mono">DERIVED</strong> (calculated engineering estimate), or <strong className="text-amber-400 font-mono">SIMULATED</strong> (demonstration physics model).</p>
-          </div>
-          <div className="space-y-2 border-l-2 border-orange-500/60 pl-3">
-            <h4 className="font-semibold text-zinc-200 font-mono">Non-Bypassable Hard Constraints</h4>
-            <p>Safety is not reduced to a simple weighted sum. Slopes &gt; 18°, active hazard boundaries, and life support time violations strictly invalidate route recommendations.</p>
-          </div>
-          <div className="space-y-2 border-l-2 border-orange-500/60 pl-3">
-            <h4 className="font-semibold text-zinc-200 font-mono">Human Commander Oversight</h4>
-            <p>Experiments involving hazardous perchlorates, core drilling, or elevated radiation enforce Class C mandatory Mission Commander approval before tool actuation.</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

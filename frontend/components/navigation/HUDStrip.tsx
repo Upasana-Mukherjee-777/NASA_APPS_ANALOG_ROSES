@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { Volume2, VolumeX, Shield, Battery, Wind, Info, Sparkles, Compass } from 'lucide-react'
+import { Volume2, VolumeX, Shield, Battery, Wind, Info, Sparkles, Compass, Camera } from 'lucide-react'
 import { useMission } from '@/context/MissionContext'
 
 export default function HUDStrip() {
@@ -182,6 +182,16 @@ export default function HUDStrip() {
             >
               <Info className="w-3.5 h-3.5" />
             </button>
+
+            {/* Screenshots Showcase Gallery */}
+            <Link
+              href="/gallery"
+              onClick={playClick}
+              className="p-1.5 rounded-xl border border-pink-500/40 bg-pink-950/40 text-pink-300 hover:text-white hover:border-pink-500 transition"
+              title="View App Tour & Screenshots Showcase (Desktop & Mobile)"
+            >
+              <Camera className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
       </div>

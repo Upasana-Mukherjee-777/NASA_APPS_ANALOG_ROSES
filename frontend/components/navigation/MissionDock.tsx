@@ -16,7 +16,8 @@ import {
   FileText,
   X,
   Orbit,
-  ChevronUp
+  ChevronUp,
+  Camera
 } from 'lucide-react'
 import { useMission } from '@/context/MissionContext'
 
@@ -41,6 +42,7 @@ const DOCK_MODULES: DockItem[] = [
   { id: 'safety', name: 'Safety Archive', shortLabel: 'Safety Hist.', href: '/history', icon: History, color: 'text-yellow-400', bgHover: 'hover:border-yellow-500/60 hover:bg-yellow-950/40' },
   { id: 'live', name: 'Live Telemetry', shortLabel: 'Telemetry', href: '/overview', icon: Activity, color: 'text-teal-400', bgHover: 'hover:border-teal-500/60 hover:bg-teal-950/40' },
   { id: 'report', name: 'Mission Report', shortLabel: 'Report Log', href: '/reports', icon: FileText, color: 'text-indigo-400', bgHover: 'hover:border-indigo-500/60 hover:bg-indigo-950/40' },
+  { id: 'gallery', name: 'Visual Showcase', shortLabel: 'Screenshots', href: '/gallery', icon: Camera, color: 'text-pink-400', bgHover: 'hover:border-pink-500/60 hover:bg-pink-950/40' },
 ]
 
 export default function MissionDock() {
@@ -74,7 +76,7 @@ export default function MissionDock() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
               {DOCK_MODULES.map(mod => {
                 const Icon = mod.icon
                 const isActive = pathname === mod.href

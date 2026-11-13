@@ -19,7 +19,8 @@ import {
   BarChart2,
   Route,
   Activity,
-  Database
+  Database,
+  Camera
 } from 'lucide-react'
 import { useMission } from '@/context/MissionContext'
 import SimulatedBadge from '@/components/ui/SimulatedBadge'
@@ -316,6 +317,14 @@ export default function MarsGlobeHomePage() {
           >
             <Database className="w-3.5 h-3.5" />
             <span>📊 DATA STUDIO</span>
+          </Link>
+          <Link
+            href="/gallery"
+            onClick={playClick}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-pink-500/50 bg-pink-950/60 hover:bg-pink-900/80 text-pink-300 font-bold transition shadow-lg touch-react"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>📸 APP SHOWCASE GALLERY</span>
           </Link>
         </div>
       </div>

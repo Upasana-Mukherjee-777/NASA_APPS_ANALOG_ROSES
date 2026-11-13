@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.database.base import create_tables
 from app.database.seed_data import seed_database
-from app.api.routes import missions, observations, routes, experiments, geospatial, history, simulation, digital_twin, ml, reports
+from app.api.routes import missions, observations, routes, experiments, geospatial, history, simulation, digital_twin, ml, reports, hazards, telemetry
 
 
 @asynccontextmanager
@@ -42,6 +42,8 @@ app.include_router(simulation.router, prefix="/api")
 app.include_router(digital_twin.router, prefix="/api")
 app.include_router(ml.router, prefix="/api")
 app.include_router(reports.router, prefix="/api")
+app.include_router(hazards.router, prefix="/api")
+app.include_router(telemetry.router, prefix="/api")
 
 
 @app.get("/api/health")

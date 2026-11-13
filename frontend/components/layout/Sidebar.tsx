@@ -15,22 +15,22 @@ import {
   Box,
   Database,
   FileSpreadsheet,
-  Settings,
-  HelpCircle
+  HelpCircle,
+  Play
 } from 'lucide-react'
 
 export const NAV_ITEMS = [
   { label: 'Landing Overview', href: '/', icon: HelpCircle, badge: 'Home' },
-  { label: 'Mission Overview', href: '/overview', icon: LayoutDashboard },
-  { label: 'Martian Explorer', href: '/explorer', icon: Compass, badge: '8 Layers' },
-  { label: 'Mission Planner', href: '/planner', icon: Route, badge: 'A*' },
-  { label: 'Astronaut Field Console', href: '/field', icon: UserCheck, badge: 'Telemetry' },
-  { label: 'AI Risk Intelligence', href: '/risk', icon: Brain, badge: 'ML' },
+  { label: 'Mission Control Centre', href: '/overview', icon: LayoutDashboard, badge: 'MCC Live' },
+  { label: 'Martian Explorer', href: '/explorer', icon: Compass, badge: 'Interactive' },
+  { label: 'Mars Mission Simulator', href: '/simulation', icon: Play, badge: 'Live Sim' },
+  { label: 'Route Comparison Lab', href: '/planner', icon: Route, badge: 'A* Multi' },
+  { label: 'AI Risk Intelligence', href: '/risk', icon: Brain, badge: 'Dynamic ML' },
+  { label: 'Martian Experiment Lab', href: '/experiments', icon: FlaskConical, badge: 'Class A-D' },
   { label: 'Historical Safety RAG', href: '/history', icon: History, badge: 'NASA Docs' },
-  { label: 'Experiment Management', href: '/experiments', icon: FlaskConical, badge: 'Class A-D' },
-  { label: 'Earth Simulation Lab', href: '/simulation', icon: Activity, badge: 'Physics' },
   { label: '3D Digital Twin', href: '/digital-twin', icon: Box, badge: 'Three.js' },
-  { label: 'NASA Data Explorer', href: '/datasets', icon: Database, badge: 'Metadata' },
+  { label: 'Multimodal Data Studio', href: '/datasets', icon: Database, badge: '8 Layers' },
+  { label: 'Astronaut Field Console', href: '/field', icon: UserCheck, badge: 'Ingestion' },
   { label: 'Mission Reports', href: '/reports', icon: FileSpreadsheet, badge: 'Export' },
 ]
 
@@ -92,4 +92,3 @@ export default function Sidebar() {
     </aside>
   )
 }
-

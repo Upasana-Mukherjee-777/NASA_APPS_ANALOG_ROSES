@@ -16,6 +16,14 @@ export const getMissionDetail = async (id: string) => (await api.get(`/missions/
 export const updateMissionStatus = async (id: string, status: string, notes?: string) =>
   (await api.patch(`/missions/${id}/status`, { status, notes })).data
 
+// Hazards Management
+export const getHazards = async (missionId?: string) =>
+  (await api.get('/hazards', { params: { mission_id: missionId } })).data
+export const createHazard = async (data: any) =>
+  (await api.post('/hazards', data)).data
+export const deleteHazard = async (hazardId: string) =>
+  (await api.delete(`/hazards/${hazardId}`)).data
+
 // Observations & Telemetry
 export const getObservations = async (missionId?: string, category?: string) =>
   (await api.get('/observations', { params: { mission_id: missionId, category } })).data
@@ -24,6 +32,15 @@ export const submitObservation = async (data: any) =>
 export const uploadBatchObservations = async (missionId: string, observations: any[]) =>
   (await api.post('/observations/batch', { mission_id: missionId, observations })).data
 export const getTelemetryStream = async () => (await api.get('/observations/stream')).data
+
+// Live Telemetry Engine & Anomaly Injection
+export const getTelemetryState = async () => (await api.get('/telemetry/state')).data
+export const tickTelemetry = async () => (await api.get('/telemetry/tick')).data
+export const controlTelemetry = async (action: string, frequencyHz?: number, seed?: number) =>
+  (await api.post('/telemetry/control', { action, frequency_hz: frequencyHz, seed })).data
+export const injectAnomaly = async (anomalyType: string, severity: string = 'HIGH', details?: string) =>
+  (await api.post('/telemetry/inject-anomaly', { anomaly_type: anomalyType, severity, details })).data
+export const clearAnomaly = async () => (await api.post('/telemetry/clear-anomaly')).data
 
 // Routes
 export const planRoutes = async (params: any) =>
@@ -81,4 +98,3 @@ export const getMLMetrics = async () => (await api.get('/ml/metrics')).data
 export const getMissionReport = async (missionId: string) =>
   (await api.get(`/reports/mission/${missionId}`)).data
 export const getSystemHealth = async () => (await api.get('/health')).data
-

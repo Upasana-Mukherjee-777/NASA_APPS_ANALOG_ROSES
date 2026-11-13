@@ -32,6 +32,9 @@ marsguard.db
 .env.test.local
 .env.production.local
 
+*.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+
 # OS
 .DS_Store
 Thumbs.db

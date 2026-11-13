@@ -132,6 +132,65 @@ class TestMarsGuardEndpoints(unittest.TestCase):
         self.assertIn("timeline", twin)
         print("✓ Module 8: Mission Digital Twin state verified")
 
+    def test_10_hazards_management(self):
+        # 1. Fetch hazards
+        res = self.client.get("/api/hazards")
+        self.assertEqual(res.status_code, 200)
+        hazards = res.json()
+        self.assertIsInstance(hazards, list)
+
+        # 2. Create manual hazard
+        h_payload = {
+            "mission_id": "00000000-0000-0000-0000-000000000001",
+            "name": "Test Scree Hazard",
+            "category": "ROCK_FALL",
+            "severity": "HIGH",
+            "lat": 18.4110,
+            "lon": 77.5310,
+            "affected_radius_m": 85.0
+        }
+        res_create = self.client.post("/api/hazards", json=h_payload)
+        self.assertEqual(res_create.status_code, 200)
+        h_created = res_create.json()["hazard"]
+        self.assertEqual(h_created["name"], "Test Scree Hazard")
+
+        # 3. Delete/deactivate hazard
+        h_id = h_created["id"]
+        res_del = self.client.delete(f"/api/hazards/{h_id}")
+        self.assertEqual(res_del.status_code, 200)
+        print("✓ Section 2 & 3: Hazards Management & Dynamic Placement verified")
+
+    def test_11_telemetry_simulator(self):
+        # 1. Get telemetry state
+        res_state = self.client.get("/api/telemetry/state")
+        self.assertEqual(res_state.status_code, 200)
+
+        # 2. Control simulation (START)
+        res_start = self.client.post("/api/telemetry/control", json={"action": "START", "frequency_hz": 2.0})
+        self.assertEqual(res_start.status_code, 200)
+        self.assertEqual(res_start.json()["status"], "RUNNING")
+
+        # 3. Generate tick packet
+        res_tick = self.client.get("/api/telemetry/tick")
+        self.assertEqual(res_tick.status_code, 200)
+        packet = res_tick.json()
+        self.assertIn("environmental", packet)
+        self.assertIn("subsystems", packet)
+        self.assertIn("risk_assessment", packet)
+
+        # 4. Inject Anomaly (DUST_STORM)
+        res_anom = self.client.post("/api/telemetry/inject-anomaly", json={
+            "anomaly_type": "DUST_STORM",
+            "severity": "CRITICAL"
+        })
+        self.assertEqual(res_anom.status_code, 200)
+        self.assertTrue(res_anom.json()["current_telemetry"]["pipeline_validation"]["is_anomaly"])
+
+        # 5. Clear anomaly
+        res_clear = self.client.post("/api/telemetry/clear-anomaly")
+        self.assertEqual(res_clear.status_code, 200)
+        print("✓ Section 1 & 10: Live Telemetry Engine & Anomaly Ingestion Pipeline verified")
+
 
 if __name__ == "__main__":
     unittest.main()

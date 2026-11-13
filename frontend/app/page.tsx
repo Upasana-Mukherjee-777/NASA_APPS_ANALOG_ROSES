@@ -19,63 +19,64 @@ import {
   CheckCircle2,
   AlertTriangle,
   Flame,
-  Radio
+  Radio,
+  Play
 } from 'lucide-react'
 
 export default function LandingPage() {
   const PILLARS = [
     {
       num: "01",
-      title: "Adaptive Mission Intelligence",
-      desc: "Event-driven telemetry ingestion engine. Astronaut observations immediately recalculate local risk maps, update routes, and sync the digital twin.",
-      link: "/field",
-      tag: "Reactive Workflow"
+      title: "Mission Control Centre (MCC)",
+      desc: "Live operational telemetry command centre. Multi-variable Recharts graphs for 8 live parameters, start/pause controls, and anomaly injection.",
+      link: "/overview",
+      tag: "Live Telemetry"
     },
     {
       num: "02",
       title: "Interactive Martian Explorer",
-      desc: "Multi-layered GIS mapping across Jezero Crater featuring 8 NASA scientific data overlays, coordinates, landmarks, and terrain elevation.",
+      desc: "Multi-layered GIS mapping across Jezero Crater featuring 8 NASA scientific data overlays, pan/zoom, manual hazard placement, and elevation profiling.",
       link: "/explorer",
       tag: "8 NASA Layers"
     },
     {
       num: "03",
-      title: "Safety-First Route Optimizer",
-      desc: "Constrained multi-objective cost optimization J = αR + βC + γT. Enforces non-negotiable slope, radiation, and life-support hard safety constraints.",
+      title: "Mars Mission Simulator",
+      desc: "Dedicated mission simulation platform. Manipulate 11 environmental sliders, inject dynamic contingencies, and watch computational AI responses.",
+      link: "/simulation",
+      tag: "Live Simulation"
+    },
+    {
+      num: "04",
+      title: "Route Comparison Lab",
+      desc: "Constrained multi-objective cost optimization J = αR + βC + γT. Enforces non-negotiable slope and radiation safety constraints across 3 candidate routes.",
       link: "/planner",
       tag: "A* Optimization"
     },
     {
-      num: "04",
-      title: "Multimodal NASA Planetary Data",
-      desc: "Optical (HiRISE), Thermal (THEMIS), Spectral (CRISM), Topographic (MOLA), Geophysical, Atmospheric (MEDA), Radiation (RAD), and Chemical (PIXL).",
-      link: "/datasets",
-      tag: "Strict Provenance"
-    },
-    {
       num: "05",
-      title: "AI Experiment Intervention Classifier",
-      desc: "Machine Learning + deterministic safety-rule engine classifying scientific tasks into Class A (Autonomous), B, C (Human Approval), and D (Stop/Reassess).",
-      link: "/experiments",
-      tag: "Human-in-the-Loop"
+      title: "AI Risk Intelligence Dashboard",
+      desc: "Dynamic multi-factor risk computation. Real-time parameter modifications, feature importance charts, and explainable safety decision rationales.",
+      link: "/risk",
+      tag: "Dynamic ML"
     },
     {
       num: "06",
-      title: "Earth-Based Simulation Lab",
-      desc: "Physics-based numerical testing laboratory for pre-mission simulation of spacesuit thermal exchange, radiation dosimetry, dust opacity, and crew fatigue.",
-      link: "/simulation",
-      tag: "Physics Modeling"
+      title: "Martian Experiment Lab",
+      desc: "7 scientific experiment templates, AI intervention classifier (Class A to D), live execution simulation, and human approval workflow.",
+      link: "/experiments",
+      tag: "Class A-D AI"
     },
     {
       num: "07",
       title: "Historical Safety Intelligence (RAG)",
-      desc: "Core differentiator: semantic knowledge base of documented NASA mishap reports (Apollo 15 fatigue, Apollo 17 dust, ISS EVA 23 water leak) with exact citations.",
+      desc: "Semantic retrieval of documented NASA mishap reports (Apollo 15 fatigue, Apollo 17 dust, ISS EVA 23 water leak) with explicit Martian transferability limits.",
       link: "/history",
-      tag: "Traceable Citations"
+      tag: "NASA Documents"
     },
     {
       num: "08",
-      title: "Astronaut-Updated 3D Digital Twin",
+      title: "3D Martian Digital Twin",
       desc: "Interactive 3D virtual environment combining terrain elevation grid, rover tracking, astronaut positions, hazards, and mission event timeline replay.",
       link: "/digital-twin",
       tag: "Three.js 3D Engine"
@@ -83,7 +84,7 @@ export default function LandingPage() {
   ]
 
   return (
-    <div className="max-w-6xl mx-auto space-y-12 py-4">
+    <div className="max-w-6xl mx-auto space-y-10 py-4 font-sans">
       {/* Hero Section */}
       <div className="relative rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900/90 via-zinc-950/80 to-zinc-950 p-8 md:p-12 overflow-hidden shadow-2xl">
         <div className="absolute -right-20 -top-20 w-96 h-96 bg-orange-600/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -99,35 +100,44 @@ export default function LandingPage() {
             MARS-GUARD
           </h1>
           <p className="text-xl md:text-2xl font-light text-zinc-300">
-            Martian Adaptive Risk, Safety & Guidance Using AI, Research and Digital-Twin Intelligence.
+            Interactive Martian Mission Control & Simulation Platform.
           </p>
 
           <p className="text-sm md:text-base text-zinc-400 leading-relaxed">
             Prioritising astronaut safety, physical comfort, and mission feasibility while enabling scientific discovery.
-            Connecting documented NASA spaceflight mishap experiences with live Martian environmental telemetry, constrained route pathfinding, and adaptive 3D digital twins.
+            Connecting documented NASA spaceflight mishap experiences with live Martian environmental telemetry, constrained route pathfinding, real-time experiment simulation, and adaptive 3D digital twins.
           </p>
 
           {/* Quick Action Buttons */}
-          <div className="flex flex-wrap gap-4 pt-2">
+          <div className="flex flex-wrap gap-3 pt-2 font-mono">
             <Link
-              href="/overview"
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg hover:from-orange-500 hover:to-amber-500 transition glow-orange"
+              href="/simulation"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 px-6 py-3.5 text-xs font-bold text-white shadow-lg hover:from-orange-500 hover:to-amber-500 transition glow-orange"
             >
-              <span>Launch Mission Overview</span>
+              <Play className="h-4 w-4" />
+              <span>Launch Mars Mission Simulator</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
 
             <Link
+              href="/overview"
+              className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-800 transition"
+            >
+              <Activity className="h-4 w-4 text-emerald-400" />
+              <span>Live Mission Control (MCC)</span>
+            </Link>
+
+            <Link
               href="/explorer"
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900/80 px-6 py-3.5 text-sm font-semibold text-zinc-200 hover:bg-zinc-800 transition"
+              className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-800 transition"
             >
               <Compass className="h-4 w-4 text-orange-400" />
-              <span>Explore Martian Map (8 Layers)</span>
+              <span>Interactive Map (8 Layers)</span>
             </Link>
 
             <Link
               href="/digital-twin"
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 px-5 py-3.5 text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-900 transition"
+              className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/60 px-5 py-3.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 transition"
             >
               <Box className="h-4 w-4 text-cyan-400" />
               <span>3D Digital Twin</span>
@@ -137,30 +147,30 @@ export default function LandingPage() {
       </div>
 
       {/* Featured Demonstration Mission Banner */}
-      <div className="rounded-xl border border-amber-800/40 bg-gradient-to-r from-amber-950/30 to-zinc-900/40 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="rounded-xl border border-amber-800/40 bg-gradient-to-r from-amber-950/30 to-zinc-900/40 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 font-mono">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <span className="font-mono text-xs uppercase tracking-wider text-amber-400 font-semibold">Active Demonstration Sortie</span>
             <span className="text-xs text-zinc-400">• Sol 1084</span>
           </div>
-          <h2 className="text-xl font-bold text-white">EVA-07: Scientific Exploration Near Jezero Crater</h2>
-          <p className="text-xs text-zinc-400 max-w-2xl">
+          <h2 className="text-xl font-bold text-white font-sans">EVA-07: Jezero Western Delta Exploration</h2>
+          <p className="text-xs text-zinc-400 max-w-2xl font-sans">
             Two-person astronaut sortie (Sarah Chen, Dr. Mark Thorne) investigating ancient lake delta smectite mudstones,
             navigating talus slope hazards, testing spacesuit cooling loops, and evaluating constrained routes.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Link
-            href="/field"
-            className="rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-zinc-950 hover:bg-amber-500 transition"
+            href="/simulation"
+            className="rounded-lg bg-orange-600 px-4 py-2 text-xs font-bold text-white hover:bg-orange-500 transition shadow"
           >
-            Astronaut Field Console
+            Run EVA-07 Simulation
           </Link>
           <Link
             href="/planner"
             className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 transition"
           >
-            Route Comparison
+            Compare Routes
           </Link>
         </div>
       </div>
@@ -168,8 +178,8 @@ export default function LandingPage() {
       {/* Core Architectural Pillars Grid */}
       <div className="space-y-6">
         <div>
-          <h3 className="text-2xl font-bold text-white">The Eight Core Functional Pillars</h3>
-          <p className="text-sm text-zinc-400">All eight pillars are fully implemented and connected to computational algorithms.</p>
+          <h3 className="text-2xl font-bold text-white">The Eight Core Interactive Modules</h3>
+          <p className="text-sm text-zinc-400">All modules are fully operational with mathematical models, AI classifiers, and live data telemetry.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -189,12 +199,12 @@ export default function LandingPage() {
                 <h4 className="text-base font-semibold text-zinc-100 group-hover:text-orange-400 transition">
                   {pillar.title}
                 </h4>
-                <p className="text-xs text-zinc-400 leading-relaxed">
+                <p className="text-xs text-zinc-400 leading-relaxed font-sans">
                   {pillar.desc}
                 </p>
               </div>
 
-              <div className="pt-4 flex items-center text-xs font-semibold text-orange-400 group-hover:translate-x-1 transition">
+              <div className="pt-4 flex items-center text-xs font-semibold text-orange-400 group-hover:translate-x-1 transition font-mono">
                 <span>Access Module</span>
                 <ArrowRight className="h-3.5 w-3.5 ml-1" />
               </div>
@@ -204,19 +214,19 @@ export default function LandingPage() {
       </div>
 
       {/* Differentiators & Scientific Integrity */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 md:p-8 space-y-6">
-        <h3 className="text-xl font-bold text-white">Engineering Safeguards & Scientific Integrity</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-zinc-400">
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 md:p-8 space-y-6 font-mono">
+        <h3 className="text-xl font-bold text-white font-sans">Engineering Safeguards & Scientific Integrity</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-zinc-400 font-sans">
           <div className="space-y-2 border-l-2 border-orange-500/60 pl-3">
-            <h4 className="font-semibold text-zinc-200">Strict Provenance Tags</h4>
-            <p>Every piece of data is transparently flagged as <strong className="text-emerald-400">OBSERVED</strong> (NASA sensor measurement), <strong className="text-cyan-400">DERIVED</strong> (calculated engineering estimate), or <strong className="text-amber-400">SIMULATED</strong> (demonstration physics model).</p>
+            <h4 className="font-semibold text-zinc-200 font-mono">Strict Provenance Tags</h4>
+            <p>Every piece of data is transparently flagged as <strong className="text-emerald-400 font-mono">OBSERVED</strong> (NASA sensor measurement), <strong className="text-cyan-400 font-mono">DERIVED</strong> (calculated engineering estimate), or <strong className="text-amber-400 font-mono">SIMULATED</strong> (demonstration physics model).</p>
           </div>
           <div className="space-y-2 border-l-2 border-orange-500/60 pl-3">
-            <h4 className="font-semibold text-zinc-200">Non-Bypassable Hard Constraints</h4>
+            <h4 className="font-semibold text-zinc-200 font-mono">Non-Bypassable Hard Constraints</h4>
             <p>Safety is not reduced to a simple weighted sum. Slopes &gt; 18°, active hazard boundaries, and life support time violations strictly invalidate route recommendations.</p>
           </div>
           <div className="space-y-2 border-l-2 border-orange-500/60 pl-3">
-            <h4 className="font-semibold text-zinc-200">Human Commander Oversight</h4>
+            <h4 className="font-semibold text-zinc-200 font-mono">Human Commander Oversight</h4>
             <p>Experiments involving hazardous perchlorates, core drilling, or elevated radiation enforce Class C mandatory Mission Commander approval before tool actuation.</p>
           </div>
         </div>
@@ -224,4 +234,3 @@ export default function LandingPage() {
     </div>
   )
 }
-

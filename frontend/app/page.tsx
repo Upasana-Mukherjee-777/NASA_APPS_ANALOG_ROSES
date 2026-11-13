@@ -15,7 +15,11 @@ import {
   Info,
   RotateCw,
   Eye,
-  Award
+  Award,
+  BarChart2,
+  Route,
+  Activity,
+  Database
 } from 'lucide-react'
 import { useMission } from '@/context/MissionContext'
 import SimulatedBadge from '@/components/ui/SimulatedBadge'
@@ -91,13 +95,12 @@ export default function MarsGlobeHomePage() {
   const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null)
   const [isRotating, setIsRotating] = useState(true)
 
-  // Three.js Scene References
+  // Three.js References
   const sceneRef = useRef<THREE.Scene | null>(null)
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
   const globeRef = useRef<THREE.Mesh | null>(null)
   const markerMeshesRef = useRef<THREE.Mesh[]>([])
-  const targetRotationRef = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -106,16 +109,13 @@ export default function MarsGlobeHomePage() {
     const width = container.clientWidth
     const height = container.clientHeight
 
-    // Scene setup
     const scene = new THREE.Scene()
     sceneRef.current = scene
 
-    // Camera setup
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000)
     camera.position.set(0, 0, 3.8)
     cameraRef.current = camera
 
-    // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setSize(width, height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -144,7 +144,7 @@ export default function MarsGlobeHomePage() {
     const starField = new THREE.Points(starGeometry, starMaterial)
     scene.add(starField)
 
-    // Lighting (Day/Night Terminator)
+    // Lighting
     const sunLight = new THREE.DirectionalLight(0xfff3e6, 2.5)
     sunLight.position.set(5, 2, 4)
     scene.add(sunLight)
@@ -152,12 +152,11 @@ export default function MarsGlobeHomePage() {
     const ambientLight = new THREE.AmbientLight(0x1a2130, 0.45)
     scene.add(ambientLight)
 
-    // Texture Loader for Mars
+    // Textures
     const textureLoader = new THREE.TextureLoader()
     const marsTexture = textureLoader.load('/assets/nasa/mars_surface_texture.jpg')
     const marsBump = textureLoader.load('/assets/nasa/mars_elevation_bump.jpg')
 
-    // Mars Sphere Geometry
     const globeRadius = 1.25
     const globeGeometry = new THREE.SphereGeometry(globeRadius, 64, 64)
     const globeMaterial = new THREE.MeshStandardMaterial({
@@ -171,7 +170,7 @@ export default function MarsGlobeHomePage() {
     scene.add(globe)
     globeRef.current = globe
 
-    // Atmosphere Glow Layer
+    // Atmosphere
     const atmosphereGeometry = new THREE.SphereGeometry(globeRadius * 1.025, 48, 48)
     const atmosphereMaterial = new THREE.MeshStandardMaterial({
       color: 0xeb5e28,
@@ -183,7 +182,6 @@ export default function MarsGlobeHomePage() {
     const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial)
     scene.add(atmosphere)
 
-    // Helper: Convert Lat/Lon to Sphere Vector3
     const latLonToVector3 = (lat: number, lon: number, r: number) => {
       const phi = (90 - lat) * (Math.PI / 180)
       const theta = (lon + 180) * (Math.PI / 180)
@@ -194,7 +192,6 @@ export default function MarsGlobeHomePage() {
       )
     }
 
-    // Hotspot Markers
     markerMeshesRef.current = []
     MARTIAN_HOTSPOTS.forEach((spot, idx) => {
       const pos = latLonToVector3(spot.lat, spot.lon, globeRadius * 1.015)
@@ -209,7 +206,6 @@ export default function MarsGlobeHomePage() {
       markerMeshesRef.current.push(marker)
     })
 
-    // Raycasting for interactive clicks
     const raycaster = new THREE.Raycaster()
     const mouse = new THREE.Vector2()
 
@@ -234,7 +230,6 @@ export default function MarsGlobeHomePage() {
 
     renderer.domElement.addEventListener('click', onPointerDown)
 
-    // Animation Loop
     let animationId: number
     const animate = () => {
       animationId = requestAnimationFrame(animate)
@@ -243,7 +238,6 @@ export default function MarsGlobeHomePage() {
         globeRef.current.rotation.y += 0.002
       }
 
-      // Hotspot pulsing animation
       markerMeshesRef.current.forEach((m, i) => {
         const scale = 1 + Math.sin(Date.now() * 0.005 + i) * 0.25
         m.scale.set(scale, scale, scale)
@@ -253,7 +247,6 @@ export default function MarsGlobeHomePage() {
     }
     animate()
 
-    // Resize Handler
     const handleResize = () => {
       if (!containerRef.current) return
       const w = containerRef.current.clientWidth
@@ -277,18 +270,54 @@ export default function MarsGlobeHomePage() {
       {/* 3D WebGL Mars Canvas */}
       <div ref={containerRef} className="absolute inset-0 cursor-grab active:cursor-grabbing z-0" />
 
-      {/* Floating Spatial HUD Overlay */}
+      {/* Floating Spatial HUD Header */}
       <div className="absolute top-6 left-6 z-10 pointer-events-auto">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-1.5">
           <SimulatedBadge type="REAL" />
           <span className="text-[11px] font-mono text-zinc-400">Viking MOLA Orbit Mosaic</span>
         </div>
         <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white drop-shadow-md">
           PLANET MARS
         </h1>
-        <p className="text-xs md:text-sm text-zinc-300 font-sans mt-1">
-          Pick a glowing hotspot to explore or initiate EVA-07.
+        <p className="text-xs md:text-sm text-zinc-300 font-sans mt-0.5">
+          Pick a glowing hotspot on the globe or access Maps & Graphs below.
         </p>
+
+        {/* Quick-Access Pills for Maps & Graphs */}
+        <div className="flex flex-wrap items-center gap-2 mt-3 font-mono text-xs">
+          <Link
+            href="/explorer"
+            onClick={playClick}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cyan-500/50 bg-cyan-950/60 hover:bg-cyan-900/80 text-cyan-300 font-bold transition shadow-lg touch-react"
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span>🗺️ GIS MAP (8 LAYERS)</span>
+          </Link>
+          <Link
+            href="/overview"
+            onClick={playClick}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-orange-500/50 bg-orange-950/60 hover:bg-orange-900/80 text-orange-300 font-bold transition shadow-lg touch-react"
+          >
+            <Activity className="w-3.5 h-3.5" />
+            <span>📈 LIVE TELEMETRY GRAPHS</span>
+          </Link>
+          <Link
+            href="/risk"
+            onClick={playClick}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-500/50 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 font-bold transition shadow-lg touch-react"
+          >
+            <Shield className="w-3.5 h-3.5" />
+            <span>🎯 RISK RADAR & CHARTS</span>
+          </Link>
+          <Link
+            href="/datasets"
+            onClick={playClick}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-purple-500/50 bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 font-bold transition shadow-lg touch-react"
+          >
+            <Database className="w-3.5 h-3.5" />
+            <span>📊 DATA STUDIO</span>
+          </Link>
+        </div>
       </div>
 
       {/* Center Prompt when nothing is selected */}
@@ -312,7 +341,7 @@ export default function MarsGlobeHomePage() {
             className="flex items-center gap-2 px-5 py-3.5 rounded-2xl border border-white/15 bg-zinc-900/80 backdrop-blur-md text-zinc-200 font-mono text-xs font-bold hover:bg-zinc-800 transition"
           >
             <Compass className="w-4 h-4 text-cyan-400" />
-            <span>FREE EXPLORE MAP</span>
+            <span>OPEN MAP EXPLORER</span>
           </Link>
 
           <button
@@ -332,7 +361,6 @@ export default function MarsGlobeHomePage() {
       {selectedHotspot && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[94%] max-w-xl rounded-3xl border border-orange-500/40 bg-zinc-950/90 backdrop-blur-2xl p-5 shadow-2xl animate-in slide-in-from-bottom-6 duration-300 glass-panel">
           <div className="flex flex-col sm:flex-row gap-4 items-center">
-            {/* Real NASA Imagery Thumbnail */}
             <div className="relative w-full sm:w-44 h-32 rounded-2xl overflow-hidden border border-zinc-700 shrink-0">
               <img
                 src={selectedHotspot.image}
@@ -344,7 +372,6 @@ export default function MarsGlobeHomePage() {
               </div>
             </div>
 
-            {/* Info and Actions */}
             <div className="flex-1 space-y-2 w-full">
               <div className="flex items-center justify-between">
                 <span className="px-2 py-0.5 rounded-md bg-orange-950 border border-orange-700/60 text-orange-400 text-[10px] font-mono font-bold">
@@ -362,7 +389,6 @@ export default function MarsGlobeHomePage() {
                 {selectedHotspot.subtitle}
               </p>
 
-              {/* Stats Bar */}
               <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-zinc-900/80 rounded-xl p-2 border border-zinc-800">
                 <div>
                   <span className="text-zinc-500 block text-[9px]">ELEVATION</span>
@@ -374,7 +400,6 @@ export default function MarsGlobeHomePage() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex items-center gap-2 pt-1">
                 <Link
                   href={selectedHotspot.targetPath}

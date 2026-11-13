@@ -21,7 +21,8 @@ import {
   Mountain,
   Flame,
   Radio,
-  Wind
+  Wind,
+  Crosshair
 } from 'lucide-react'
 import {
   ResponsiveContainer,
@@ -29,9 +30,10 @@ import {
   Area,
   XAxis,
   YAxis,
-  Tooltip
+  Tooltip,
+  CartesianGrid
 } from 'recharts'
-import { getNASALayers, getJezeroLandmarks, getHazards, createHazard, deleteHazard } from '@/services/api'
+import { getNASALayers, getJezeroLandmarks, getHazards, getElevation } from '@/services/api'
 import { useMission } from '@/context/MissionContext'
 import SimulatedBadge from '@/components/ui/SimulatedBadge'
 
@@ -46,71 +48,46 @@ const NASA_LAYER_PREVIEWS = [
   { id: 'CHEMICAL', name: 'Chemical', sub: 'PIXL Elemental Map', img: '/assets/nasa/PIA24926.jpg', color: 'border-cyan-500' },
 ]
 
+const JEZERO_LANDMARKS = [
+  { id: 'lm-1', name: 'Octavia E. Butler Landing', x: 25, y: 72, lat: 18.380, lon: 77.580, elev: -2580, slope: 4.2, img: '/assets/nasa/PIA24331.jpg', desc: 'Perseverance touchdown datum.' },
+  { id: 'lm-2', name: 'Kodiak Butte Isolated Mesa', x: 42, y: 55, lat: 18.362, lon: 77.545, elev: -2515, slope: 14.8, img: '/assets/nasa/PIA24814.jpg', desc: 'Stratified delta remnant with bottomset beds.' },
+  { id: 'lm-3', name: 'Western Delta Front Outcrop', x: 65, y: 38, lat: 18.420, lon: 77.520, elev: -2480, slope: 12.0, img: '/assets/nasa/PIA26252.jpg', desc: 'Clay-rich mudstone core caching zone.' },
+  { id: 'lm-4', name: 'Neretva Outflow Valley', x: 78, y: 22, lat: 18.441, lon: 77.492, elev: -2420, slope: 8.5, img: '/assets/nasa/PIA26207.jpg', desc: 'Ancient river breach into Jezero paleolake.' },
+]
+
 export default function MapExplorerPage() {
   const { playClick, playChime } = useMission()
   const [activeLayer, setActiveLayer] = useState<string>('OPTICAL')
-  const [hoveredLayer, setHoveredLayer] = useState<string | null>(null)
   const [zoom, setZoom] = useState<number>(1.0)
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
 
-  const [landmarks, setLandmarks] = useState<any[]>([])
-  const [hazards, setHazards] = useState<any[]>([])
-  const [selectedPin, setSelectedPin] = useState<any>(null)
-  const [detailsExpanded, setDetailsExpanded] = useState(false)
+  const [selectedPin, setSelectedPin] = useState<any>(JEZERO_LANDMARKS[0])
+  const [probeCoords, setProbeCoords] = useState<{ lat: string; lon: string; elev: number }>({
+    lat: '18.3970°N',
+    lon: '77.5545°E',
+    elev: -2548,
+  })
 
-  // Route drawing & live ribbon
-  const [drawnPoints, setDrawnPoints] = useState<{ x: number; y: number }[]>([
-    { x: 180, y: 380 },
-    { x: 320, y: 310 },
-    { x: 480, y: 260 },
-    { x: 620, y: 190 },
-  ])
-  const [elevationRibbon, setElevationRibbon] = useState<any[]>([])
-
-  const mapRef = useRef<HTMLDivElement>(null)
+  // Dynamic Route Elevation Profile
+  const [elevationProfile, setElevationProfile] = useState<any[]>([])
 
   useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
-    try {
-      const lmData = await getJezeroLandmarks()
-      if (lmData) {
-        const list = Object.entries(lmData).map(([key, val]: [string, any]) => ({
-          id: key,
-          ...val,
-        }))
-        setLandmarks(list)
-        if (list.length > 0) {
-          setSelectedPin(list[0])
-        }
-      }
-      const hData = await getHazards()
-      if (hData && hData.length > 0) {
-        setHazards(hData)
-      } else {
-        setHazards([
-          { id: 'h-1', name: 'Delta Scarp Scree', severity: 'HIGH', lat: 18.412, lon: 77.528, slope: '19.4°', risk: 'HIGH', desc: 'Loose boulder scree hazard with 25m standoff limit.' },
-          { id: 'h-2', name: 'Séítah Basaltic Dunes', severity: 'MEDIUM', lat: 18.391, lon: 77.618, slope: '11.2°', risk: 'MEDIUM', desc: 'Fine unconsolidated regolith; slip risk.' },
-        ])
-      }
-    } catch (e) {}
-  }
-
-  // Generate live elevation profile along route
-  useEffect(() => {
-    const profile = []
-    for (let i = 0; i < 20; i++) {
-      const dist = (i * 0.18).toFixed(2)
-      const elev = Math.round(-2560 + i * 4.8 + Math.sin(i * 0.8) * 9)
-      const slope = +(3.2 + (i / 19) * 8.5).toFixed(1)
-      profile.push({ dist: `${dist} km`, elevation: elev, slope })
+    // Generate high resolution 20-point elevation profile across Jezero corridor
+    const pts = []
+    for (let i = 0; i <= 20; i++) {
+      const dist = (i * 0.19).toFixed(2)
+      const elev = Math.round(-2580 + (i / 20) * 100 + Math.sin(i * 0.6) * 12)
+      const slope = +(3.5 + Math.pow(i / 18, 1.8) * 11).toFixed(1)
+      pts.push({
+        dist: `${dist} km`,
+        elevation: elev,
+        slope,
+      })
     }
-    setElevationRibbon(profile)
-  }, [drawnPoints])
+    setElevationProfile(pts)
+  }, [selectedPin])
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true)
@@ -120,111 +97,135 @@ export default function MapExplorerPage() {
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging) {
       setPan({
-        x: Math.max(-300, Math.min(300, e.clientX - dragStart.x)),
-        y: Math.max(-250, Math.min(250, e.clientY - dragStart.y)),
+        x: Math.max(-400, Math.min(400, e.clientX - dragStart.x)),
+        y: Math.max(-300, Math.min(300, e.clientY - dragStart.y)),
       })
     }
   }
 
   const handleMouseUp = () => setIsDragging(false)
 
+  const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!e.currentTarget) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const relX = (e.clientX - rect.left) / rect.width
+    const relY = (e.clientY - rect.top) / rect.height
+    const calcLat = (18.35 + (1 - relY) * 0.12).toFixed(4)
+    const calcLon = (77.48 + relX * 0.14).toFixed(4)
+    const calcElev = Math.round(-2580 + relX * 90 - relY * 30)
+
+    setProbeCoords({
+      lat: `${calcLat}°N`,
+      lon: `${calcLon}°E`,
+      elev: calcElev,
+    })
+    playClick()
+  }
+
   const activeLayerConfig = NASA_LAYER_PREVIEWS.find(l => l.id === activeLayer) || NASA_LAYER_PREVIEWS[0]
 
   return (
     <div className="relative w-full h-[calc(100vh-6rem)] min-h-[640px] overflow-hidden bg-black flex flex-col justify-between">
-      {/* Background NASA Satellite Layer with Smooth Crossfade */}
+      {/* Background Interactive Map Canvas */}
       <div
-        ref={mapRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        className="absolute inset-0 cursor-grab active:cursor-grabbing select-none"
+        onClick={handleMapClick}
+        className="absolute inset-0 cursor-crosshair select-none"
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-          transition: isDragging ? 'none' : 'transform 0.15s ease-out',
+          transition: isDragging ? 'none' : 'transform 0.12s ease-out',
         }}
       >
         <img
           src={activeLayerConfig.img}
           alt={activeLayerConfig.name}
-          className="w-full h-full object-cover opacity-75 filter contrast-125 saturate-110"
+          className="w-full h-full object-cover filter contrast-125 saturate-110"
         />
 
-        {/* Mars Grid Coordinate Overlay */}
+        {/* Tactical Planetary Grid Lines */}
         <div className="absolute inset-0 mars-grid-pattern opacity-40 pointer-events-none" />
 
-        {/* Glowing Animated Route Path */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none">
+        {/* Glowing Traversal Route SVG Overlay */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
           <defs>
-            <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id="gisRoute" x1="0%" y1="100%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#10b981" />
               <stop offset="50%" stopColor="#f59e0b" />
-              <stop offset="100%" stopColor="#38bdf8" />
+              <stop offset="100%" stopColor="#06b6d4" />
             </linearGradient>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+            <filter id="routeGlowGis">
+              <feGaussianBlur stdDeviation="0.8" result="blur" />
               <feMerge>
-                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
           </defs>
           <polyline
-            points={drawnPoints.map(p => `${p.x},${p.y}`).join(' ')}
+            points="25,72 42,55 65,38 78,22"
             fill="none"
-            stroke="url(#routeGradient)"
-            strokeWidth="5"
-            strokeLinecap="round"
-            strokeDasharray="8 6"
-            filter="url(#glow)"
-            className="animate-pulse"
+            stroke="url(#gisRoute)"
+            strokeWidth="0.8"
+            strokeDasharray="1.2 0.8"
+            filter="url(#routeGlowGis)"
           />
         </svg>
 
-        {/* Landmarks Markers */}
-        {landmarks.map((lm, idx) => (
-          <div
-            key={lm.id || idx}
-            onClick={() => {
-              playClick()
-              setSelectedPin({
-                name: lm.name || 'Jezero Landmark',
-                slope: `${lm.slope || '6.5'}°`,
-                risk: 'LOW (0.18)',
-                elevation: `${lm.elevation_m || -2548} m`,
-                image: NASA_LAYER_PREVIEWS[idx % NASA_LAYER_PREVIEWS.length].img,
-                desc: lm.description || 'Target rock formation surveyed by Perseverance.',
-              })
-            }}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
-            style={{
-              left: `${35 + (idx * 16) % 55}%`,
-              top: `${25 + (idx * 18) % 50}%`,
-            }}
-          >
-            <div className="w-8 h-8 rounded-full bg-orange-600/80 border-2 border-white flex items-center justify-center text-white shadow-lg group-hover:scale-125 transition">
-              <MapPin className="w-4 h-4 fill-current" />
+        {/* Interactive Landmark Pins */}
+        {JEZERO_LANDMARKS.map(lm => {
+          const isSelected = selectedPin?.id === lm.id
+          return (
+            <div
+              key={lm.id}
+              onClick={e => {
+                e.stopPropagation()
+                playChime()
+                setSelectedPin(lm)
+              }}
+              className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+              style={{ left: `${lm.x}%`, top: `${lm.y}%` }}
+            >
+              <div
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-white shadow-xl transition-transform group-hover:scale-125 ${
+                  isSelected ? 'bg-orange-500 ring-4 ring-orange-500/40 scale-125' : 'bg-zinc-900 border-2 border-white/80'
+                }`}
+              >
+                <MapPin className="w-3.5 h-3.5 fill-current" />
+              </div>
+              <span className="absolute left-1/2 -translate-x-1/2 top-8 px-2 py-0.5 rounded bg-black/90 border border-zinc-700 text-[9px] font-mono font-bold text-white whitespace-nowrap shadow-md">
+                {lm.name}
+              </span>
             </div>
-            <span className="absolute left-1/2 -translate-x-1/2 top-9 px-2 py-0.5 rounded bg-black/85 border border-zinc-700 text-[10px] font-mono font-bold text-white whitespace-nowrap shadow-md">
-              {lm.name}
-            </span>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      {/* Top Floating Glass Controls */}
-      <div className="relative z-10 p-4 flex items-center justify-between pointer-events-none">
-        {/* Active Layer Pill */}
-        <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-2xl border border-white/10 bg-zinc-950/80 backdrop-blur-md shadow-xl">
+      {/* Top Floating Glass Controls & Coordinate Prober */}
+      <div className="relative z-20 p-4 flex items-center justify-between pointer-events-none">
+        {/* Layer Badge & Active Info */}
+        <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-2xl border border-white/10 bg-zinc-950/85 backdrop-blur-md shadow-xl">
           <SimulatedBadge type="REAL" />
           <span className="text-xs font-mono font-bold text-white tracking-wide">
-            {activeLayerConfig.name.toUpperCase()} LAYER
+            {activeLayerConfig.name.toUpperCase()} MAP
           </span>
           <span className="text-[10px] font-mono text-zinc-400">({activeLayerConfig.sub})</span>
         </div>
 
+        {/* Coordinate Crosshair Probe Box */}
+        <div className="pointer-events-auto flex items-center gap-3 px-3 py-1.5 rounded-2xl border border-white/10 bg-zinc-950/85 backdrop-blur-md shadow-xl font-mono text-xs">
+          <div className="flex items-center gap-1.5 text-orange-400">
+            <Crosshair className="w-3.5 h-3.5 animate-pulse" />
+            <span className="text-[10px] text-zinc-400">PROBE:</span>
+            <span className="text-white font-bold">{probeCoords.lat}, {probeCoords.lon}</span>
+          </div>
+          <div className="h-4 w-px bg-zinc-800" />
+          <span className="text-cyan-400 font-bold">{probeCoords.elev}m MOLA</span>
+        </div>
+
         {/* Zoom & Pan Controls */}
-        <div className="pointer-events-auto flex items-center gap-1.5 p-1 rounded-2xl border border-white/10 bg-zinc-950/80 backdrop-blur-md shadow-xl">
+        <div className="pointer-events-auto flex items-center gap-1.5 p-1 rounded-2xl border border-white/10 bg-zinc-950/85 backdrop-blur-md shadow-xl">
           <button
             onClick={() => { playClick(); setZoom(z => Math.min(2.5, z + 0.25)); }}
             className="p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
@@ -249,71 +250,40 @@ export default function MapExplorerPage() {
         </div>
       </div>
 
-      {/* Selected Point Slim Bottom Sheet (<40 words limit) */}
-      {selectedPin && (
-        <div className="relative z-20 mx-auto w-[94%] max-w-xl rounded-2xl border border-white/15 bg-zinc-950/90 backdrop-blur-2xl p-4 shadow-2xl animate-in slide-in-from-bottom-4 duration-200">
-          <div className="flex items-center gap-3">
-            <img
-              src={selectedPin.image}
-              alt={selectedPin.name}
-              className="w-16 h-16 rounded-xl object-cover border border-zinc-700 shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white truncate">{selectedPin.name}</h3>
-                <button
-                  onClick={() => setDetailsExpanded(!detailsExpanded)}
-                  className="text-xs text-orange-400 hover:underline flex items-center gap-0.5"
-                >
-                  <span>{detailsExpanded ? 'Less' : 'More'}</span>
-                  {detailsExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
-                </button>
-              </div>
-
-              {/* 3 Key Stats: Slope, Risk, Elevation */}
-              <div className="grid grid-cols-3 gap-2 mt-1.5 text-center font-mono text-[10px]">
-                <div className="p-1 rounded-lg bg-zinc-900 border border-zinc-800">
-                  <span className="text-zinc-500 block text-[8px]">SLOPE</span>
-                  <span className="font-bold text-emerald-400">{selectedPin.slope}</span>
-                </div>
-                <div className="p-1 rounded-lg bg-zinc-900 border border-zinc-800">
-                  <span className="text-zinc-500 block text-[8px]">RISK</span>
-                  <span className="font-bold text-amber-400">{selectedPin.risk}</span>
-                </div>
-                <div className="p-1 rounded-lg bg-zinc-900 border border-zinc-800">
-                  <span className="text-zinc-500 block text-[8px]">ELEVATION</span>
-                  <span className="font-bold text-cyan-300">{selectedPin.elevation}</span>
-                </div>
-              </div>
-            </div>
+      {/* Center Bottom: Live Elevation Profile Ribbon Chart */}
+      <div className="relative z-20 mx-auto w-[96%] max-w-4xl rounded-2xl border border-white/15 bg-zinc-950/90 backdrop-blur-2xl p-3 shadow-2xl glass-panel pointer-events-auto">
+        <div className="flex items-center justify-between mb-1 text-[11px] font-mono">
+          <div className="flex items-center gap-2 text-white font-bold">
+            <Mountain className="w-3.5 h-3.5 text-orange-400" />
+            <span>EVA-07 LIVE ROUTE ELEVATION & SLOPE PROFILE</span>
           </div>
-
-          {/* Expanded Drawer */}
-          {detailsExpanded && (
-            <div className="mt-3 pt-3 border-t border-zinc-800 text-xs text-zinc-300 space-y-2 animate-in fade-in">
-              <p className="line-clamp-2">{selectedPin.desc}</p>
-              {/* Live Elevation Ribbon */}
-              <div className="h-20 w-full pt-1">
-                <span className="text-[10px] font-mono text-zinc-400 block mb-0.5">Route Elevation Ribbon:</span>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={elevationRibbon}>
-                    <defs>
-                      <linearGradient id="elevGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.6}/>
-                        <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <Area type="monotone" dataKey="elevation" stroke="#f97316" fill="url(#elevGrad)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
+          <span className="text-zinc-400">
+            Selected: <strong className="text-orange-400">{selectedPin.name}</strong> ({selectedPin.elev}m, {selectedPin.slope}°)
+          </span>
         </div>
-      )}
 
-      {/* Horizontal Strip of 8 NASA Image Thumbnails with Live Preview on Hover */}
-      <div className="relative z-10 px-4 pb-2">
+        {/* Real Elevation Chart */}
+        <div className="h-24 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={elevationProfile}>
+              <defs>
+                <linearGradient id="mapElevGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f97316" stopOpacity={0.6} />
+                  <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="#27272a" strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="dist" stroke="#71717a" fontSize={9} />
+              <YAxis domain={[-2600, -2440]} stroke="#71717a" fontSize={9} />
+              <Tooltip contentStyle={{ backgroundColor: '#09090b', borderColor: '#27272a', fontSize: '11px' }} />
+              <Area type="monotone" dataKey="elevation" stroke="#f97316" strokeWidth={2} fill="url(#mapElevGrad)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Horizontal Strip of 8 NASA Image Thumbnails with Live Preview */}
+      <div className="relative z-20 px-4 pb-2 pointer-events-auto">
         <div className="flex items-center gap-2 overflow-x-auto py-2 no-scrollbar">
           {NASA_LAYER_PREVIEWS.map(layer => {
             const isSelected = activeLayer === layer.id
@@ -324,8 +294,6 @@ export default function MapExplorerPage() {
                   playClick()
                   setActiveLayer(layer.id)
                 }}
-                onMouseEnter={() => setHoveredLayer(layer.id)}
-                onMouseLeave={() => setHoveredLayer(null)}
                 className={`relative flex-shrink-0 w-28 h-16 rounded-xl overflow-hidden border-2 transition-all touch-react group ${
                   isSelected
                     ? `${layer.color} scale-105 shadow-lg`

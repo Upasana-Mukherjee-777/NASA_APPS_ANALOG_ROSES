@@ -32,3 +32,4 @@ export function getAssetByIndex(index: number): NASAAsset {
 export function getAssetById(id: string): NASAAsset | undefined {
   return NASA_ASSETS.find(a => a.id === id)
 }
+

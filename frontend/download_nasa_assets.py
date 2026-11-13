@@ -134,3 +134,4 @@ with open(manifest_path, 'w', encoding='utf-8') as f:
     json.dump(manifest, f, indent=2)
 
 print(f"Manifest written with {len(manifest)} entries to {manifest_path}")
+

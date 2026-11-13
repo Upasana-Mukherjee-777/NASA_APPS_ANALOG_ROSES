@@ -12,8 +12,19 @@ import {
   AlertTriangle,
   ChevronRight,
   Sparkles,
-  Zap
+  Zap,
+  BarChart2
 } from 'lucide-react'
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from 'recharts'
 import { getMissions, planRoutes, selectRouteCandidate } from '@/services/api'
 import { useMission } from '@/context/MissionContext'
 import SimulatedBadge from '@/components/ui/SimulatedBadge'
@@ -41,11 +52,12 @@ export default function RouteLabPage() {
   const [selectedRouteId, setSelectedRouteId] = useState<string>('aegis')
   const [activeLockInfo, setActiveLockInfo] = useState<string | null>(null)
   const [confirmed, setConfirmed] = useState(false)
+  const [showCharts, setShowCharts] = useState(false)
 
-  // Cost function calculation: J = alpha * Risk + beta * (1 - Comfort) + gamma * Time
-  const alpha = 0.55 - sliderVal * 0.25 // Risk weight
-  const beta = 0.35 - sliderVal * 0.25  // Comfort weight
-  const gamma = 0.10 + sliderVal * 0.50 // Speed weight
+  // Cost function weights: J = alpha * Risk + beta * (1 - Comfort) + gamma * Time
+  const alpha = 0.55 - sliderVal * 0.25
+  const beta = 0.35 - sliderVal * 0.25
+  const gamma = 0.10 + sliderVal * 0.50
 
   const routes: RouteCandidate[] = [
     {
@@ -90,7 +102,13 @@ export default function RouteLabPage() {
     },
   ]
 
-  // Rank routes dynamically based on cost J
+  // BarChart Comparison Data
+  const comparisonChartData = [
+    { name: 'Aegis SafePath', Duration: 1.95, Slope: 12.2, Comfort: 88, Risk: 22, CostJ: routes[0].costJ * 50 },
+    { name: 'Ares Balanced', Duration: 2.30, Slope: 14.8, Comfort: 75, Risk: 34, CostJ: routes[1].costJ * 50 },
+    { name: 'Apex Direct', Duration: 1.45, Slope: 19.5, Comfort: 42, Risk: 68, CostJ: routes[2].costJ * 50 },
+  ]
+
   const validRoutes = routes.filter(r => r.isSafe)
   const winningRoute = validRoutes.reduce((best, cur) => (cur.costJ < best.costJ ? cur : best), validRoutes[0])
 
@@ -123,60 +141,85 @@ export default function RouteLabPage() {
 
   return (
     <div className="relative w-full h-[calc(100vh-6rem)] min-h-[640px] overflow-hidden flex flex-col justify-between bg-black">
-      {/* Visual Canvas: Tactical Terrain with 3 Glowing Route Lines */}
+      {/* Visual Canvas: Tactical Terrain with 3 Glowing Route Lines OR Comparison Graph */}
       <div className="absolute inset-0 select-none">
-        <img
-          src="/assets/nasa/PIA24379.jpg"
-          alt="Jezero Routes Terrain"
-          className="w-full h-full object-cover filter contrast-125 brightness-75"
-        />
-        <div className="absolute inset-0 mars-grid-pattern opacity-35 pointer-events-none" />
+        {showCharts ? (
+          // Comparison BarChart View
+          <div className="w-full h-full p-6 flex flex-col justify-center items-center bg-zinc-950/95 backdrop-blur-2xl">
+            <div className="w-full max-w-3xl h-80">
+              <span className="text-xs font-mono font-bold text-zinc-300 block mb-2">
+                ROUTE COMPARISON MATRIX (Duration, Max Slope, Comfort %, Risk %)
+              </span>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={comparisonChartData}>
+                  <CartesianGrid stroke="#27272a" strokeDasharray="3 3" opacity={0.4} />
+                  <XAxis dataKey="name" stroke="#a1a1aa" fontSize={11} />
+                  <YAxis stroke="#71717a" fontSize={10} />
+                  <Tooltip contentStyle={{ backgroundColor: '#09090b', borderColor: '#27272a' }} />
+                  <Legend />
+                  <Bar dataKey="Duration" fill="#38bdf8" name="Duration (hrs)" />
+                  <Bar dataKey="Slope" fill="#f59e0b" name="Max Slope (°)" />
+                  <Bar dataKey="Comfort" fill="#10b981" name="Comfort (%)" />
+                  <Bar dataKey="Risk" fill="#ef4444" name="Risk Score (x100)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        ) : (
+          // Glowing Map View
+          <>
+            <img
+              src="/assets/nasa/PIA24379.jpg"
+              alt="Jezero Routes Terrain"
+              className="w-full h-full object-cover filter contrast-125 brightness-75"
+            />
+            <div className="absolute inset-0 mars-grid-pattern opacity-35 pointer-events-none" />
 
-        {/* 3 Coloured Glowing Route Paths */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 800 500" preserveAspectRatio="none">
-          <defs>
-            <filter id="routeGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="5" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
+            {/* 3 Coloured Glowing Route Paths */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 800 500" preserveAspectRatio="none">
+              <defs>
+                <filter id="routeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
 
-          {routes.map(r => {
-            const isWinner = r.id === selectedRouteId
-            return (
-              <path
-                key={r.id}
-                d={r.pathD}
-                fill="none"
-                stroke={r.color}
-                strokeWidth={isWinner ? 7 : 3.5}
-                strokeDasharray={r.isSafe ? (isWinner ? 'none' : '8 4') : '4 4'}
-                filter="url(#routeGlow)"
-                className="transition-all duration-300"
-                opacity={isWinner ? 1 : 0.45}
-              />
-            )
-          })}
+              {routes.map(r => {
+                const isWinner = r.id === selectedRouteId
+                return (
+                  <path
+                    key={r.id}
+                    d={r.pathD}
+                    fill="none"
+                    stroke={r.color}
+                    strokeWidth={isWinner ? 7 : 3.5}
+                    strokeDasharray={r.isSafe ? (isWinner ? 'none' : '8 4') : '4 4'}
+                    filter="url(#routeGlow)"
+                    className="transition-all duration-300"
+                    opacity={isWinner ? 1 : 0.45}
+                  />
+                )
+              })}
 
-          {/* Start & Destination Waypoints */}
-          <circle cx="70" cy="380" r="10" fill="#3b82f6" stroke="#fff" strokeWidth="2.5" />
-          <circle cx="700" cy="130" r="10" fill="#10b981" stroke="#fff" strokeWidth="2.5" />
-        </svg>
+              <circle cx="70" cy="380" r="10" fill="#3b82f6" stroke="#fff" strokeWidth="2.5" />
+              <circle cx="700" cy="130" r="10" fill="#10b981" stroke="#fff" strokeWidth="2.5" />
+            </svg>
 
-        {/* Start / Dest Labels */}
-        <div className="absolute left-6 bottom-32 px-3 py-1 rounded-xl bg-black/80 border border-blue-500/50 text-blue-300 font-mono text-[10px] font-bold">
-          START: Octavia Butler Base
-        </div>
-        <div className="absolute right-6 top-16 px-3 py-1 rounded-xl bg-black/80 border border-emerald-500/50 text-emerald-300 font-mono text-[10px] font-bold">
-          TARGET: Delta Front Mudstones
-        </div>
+            <div className="absolute left-6 bottom-32 px-3 py-1 rounded-xl bg-black/80 border border-blue-500/50 text-blue-300 font-mono text-[10px] font-bold">
+              START: Octavia Butler Base
+            </div>
+            <div className="absolute right-6 top-16 px-3 py-1 rounded-xl bg-black/80 border border-emerald-500/50 text-emerald-300 font-mono text-[10px] font-bold">
+              TARGET: Delta Front Mudstones
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Top Header: Speed vs Comfort Tactile Slider */}
-      <div className="relative z-20 p-4 max-w-2xl mx-auto w-full pointer-events-auto">
+      {/* Top Header: Speed vs Comfort Tactile Slider & View Switcher */}
+      <div className="relative z-20 p-4 max-w-3xl mx-auto w-full pointer-events-auto">
         <div className="rounded-3xl border border-white/15 bg-zinc-950/85 backdrop-blur-2xl p-4 shadow-2xl glass-panel">
           <div className="flex items-center justify-between mb-2 font-mono">
             <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
@@ -185,7 +228,13 @@ export default function RouteLabPage() {
             </div>
             <div className="flex items-center gap-2">
               <SimulatedBadge type="REAL" />
-              <span className="text-[10px] text-zinc-400">J = αR + βC + γT</span>
+              <button
+                onClick={() => { playClick(); setShowCharts(!showCharts); }}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-zinc-700 bg-zinc-900 text-[10px] text-zinc-300 hover:text-white transition"
+              >
+                <BarChart2 className="w-3 h-3 text-orange-400" />
+                <span>{showCharts ? 'SHOW MAP' : 'SHOW GRAPHS'}</span>
+              </button>
             </div>
             <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
               <span>MAX SPEED</span>
@@ -193,7 +242,6 @@ export default function RouteLabPage() {
             </div>
           </div>
 
-          {/* Single Large Slider */}
           <input
             type="range"
             min="0"
@@ -208,7 +256,7 @@ export default function RouteLabPage() {
           />
 
           <div className="mt-2 text-center text-[11px] font-mono text-zinc-300">
-            Current Optimization: <strong className="text-white">{winningRoute.name}</strong> is ranked #1 (Cost J = {winningRoute.costJ})
+            Optimization Winner: <strong className="text-white">{winningRoute.name}</strong> (Cost J = {winningRoute.costJ})
           </div>
         </div>
       </div>
@@ -239,13 +287,9 @@ export default function RouteLabPage() {
                     : 'border-white/10 bg-zinc-950/75 hover:border-zinc-700'
                 }`}
               >
-                {/* Header: Name and Badge */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: route.color }}
-                    />
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: route.color }} />
                     <h4 className="text-xs font-bold text-white font-mono">{route.name}</h4>
                   </div>
                   {route.isSafe ? (
@@ -260,7 +304,6 @@ export default function RouteLabPage() {
                   )}
                 </div>
 
-                {/* 3 Icons: Time, Comfort, Risk */}
                 <div className="grid grid-cols-3 gap-1.5 my-2 text-center font-mono text-[10px]">
                   <div className="p-1.5 rounded-xl bg-zinc-900/80 border border-zinc-800">
                     <Clock className="w-3 h-3 mx-auto text-zinc-400 mb-0.5" />
@@ -276,7 +319,6 @@ export default function RouteLabPage() {
                   </div>
                 </div>
 
-                {/* Slope Info */}
                 <div className="text-[10px] font-mono text-zinc-400 flex justify-between pt-1 border-t border-zinc-800/80">
                   <span>Max Slope: {route.maxSlope}°</span>
                   <span className="text-orange-400 font-bold">Cost J: {route.costJ}</span>
@@ -286,7 +328,6 @@ export default function RouteLabPage() {
           })}
         </div>
 
-        {/* Confirm Route Button */}
         <div className="mt-3 flex justify-center">
           <button
             onClick={handleConfirmRoute}

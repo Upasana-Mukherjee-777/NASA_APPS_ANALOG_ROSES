@@ -108,3 +108,4 @@ for f in os.listdir(SCREENSHOTS_DIR):
 print("\nPerformance Summary:")
 for k, v in perf_results.items():
     print(f" - {k}: {v}ms")
+

@@ -40,3 +40,4 @@ export default function SimulatedBadge({ type = 'SIMULATED', className = '' }: P
     </span>
   )
 }
+

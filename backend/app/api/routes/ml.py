@@ -49,3 +49,4 @@ async def predict_risk(payload: RiskPredictSchema):
 async def get_model_evaluation_metrics():
     """Returns verified evaluation metrics across all four trained ML models."""
     return ml_suite.get_all_evaluation_metrics()
+

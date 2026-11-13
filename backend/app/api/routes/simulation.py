@@ -41,3 +41,4 @@ async def compare_scenarios(payload: ScenarioComparisonSchema):
             "scenario_b_warnings": res_b["summary"]["warnings"]
         }
     }
+

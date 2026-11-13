@@ -24,3 +24,4 @@ class DatasetMetadata(Base):
     is_available = Column(Boolean, default=True)
     layer_config = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
+

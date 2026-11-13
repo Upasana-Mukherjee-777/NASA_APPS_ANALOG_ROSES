@@ -122,3 +122,4 @@ async def generate_mission_report(mission_id: str, db: AsyncSession = Depends(ge
             "Critical high-risk operational steps require non-bypassable human commander authorization."
         ]
     }
+

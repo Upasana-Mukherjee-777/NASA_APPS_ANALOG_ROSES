@@ -57,8 +57,10 @@ async def get_mission_detail(mission_id: str, db: AsyncSession = Depends(get_db)
     experiments = exps_res.scalars().all()
 
     # Fetch active route candidates
-    route_res = await db.execute(select(Route).where(Route.mission_id == m_uuid))
-    route = route_res.scalar_one_or_none()
+    route_res = await db.execute(
+        select(Route).where(Route.mission_id == m_uuid).order_by(Route.created_at.desc())
+    )
+    route = route_res.scalars().first()
     candidates = []
     if route:
         cand_res = await db.execute(select(RouteCandidate).where(RouteCandidate.route_id == route.id))
@@ -95,3 +97,4 @@ async def update_mission_status(
     await db.commit()
     await db.refresh(mission)
     return {"message": "Mission status updated successfully", "mission": mission}
+

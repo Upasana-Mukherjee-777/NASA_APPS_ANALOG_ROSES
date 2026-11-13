@@ -73,3 +73,4 @@ async def compute_elevation_profile(payload: ElevationProfileRequestSchema):
         "max_slope_deg": max(p["local_slope_deg"] for p in profile),
         "profile": profile
     }
+

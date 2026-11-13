@@ -39,3 +39,4 @@ async def get_incident(code: str):
     if not inc:
         raise HTTPException(status_code=404, detail="Historical incident report not found")
     return inc
+

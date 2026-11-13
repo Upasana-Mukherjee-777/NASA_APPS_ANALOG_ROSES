@@ -81,3 +81,4 @@ export const getMLMetrics = async () => (await api.get('/ml/metrics')).data
 export const getMissionReport = async (missionId: string) =>
   (await api.get(`/reports/mission/${missionId}`)).data
 export const getSystemHealth = async () => (await api.get('/health')).data
+

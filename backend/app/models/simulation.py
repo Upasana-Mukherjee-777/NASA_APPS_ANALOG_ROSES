@@ -27,3 +27,4 @@ class SimulationRun(Base):
     model_version = Column(String(50), default="1.0-physics-approx")
 
     created_at = Column(DateTime, default=datetime.utcnow)
+

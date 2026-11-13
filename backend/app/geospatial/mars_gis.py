@@ -93,3 +93,4 @@ class MarsGIS:
         delta_h = abs(elev2 - elev1)
         slope_rad = math.atan(delta_h / dist_m)
         return round(math.degrees(slope_rad), 2)
+

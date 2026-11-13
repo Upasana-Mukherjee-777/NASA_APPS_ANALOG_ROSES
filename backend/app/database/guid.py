@@ -37,3 +37,4 @@ class GUID(TypeDecorator):
             except (ValueError, TypeError):
                 return value
         return value
+

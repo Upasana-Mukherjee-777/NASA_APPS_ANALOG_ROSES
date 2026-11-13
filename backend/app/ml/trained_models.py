@@ -253,3 +253,4 @@ class MLModelSuite:
 
 # Singleton instance
 ml_suite = MLModelSuite()
+

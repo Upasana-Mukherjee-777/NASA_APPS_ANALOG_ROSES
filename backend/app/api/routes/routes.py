@@ -178,3 +178,4 @@ async def select_candidate(candidate_id: str, db: AsyncSession = Depends(get_db)
 
     await db.commit()
     return {"message": "Active route candidate updated", "candidate_id": str(c_uuid)}
+

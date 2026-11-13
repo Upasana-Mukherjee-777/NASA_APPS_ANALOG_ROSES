@@ -350,3 +350,4 @@ class SimulationLabEngine:
                 "Pandolf human locomotion expenditure equations adjusted for joint resistance of planetary suit."
             ]
         }
+

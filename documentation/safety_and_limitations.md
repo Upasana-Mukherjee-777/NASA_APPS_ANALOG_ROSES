@@ -25,3 +25,4 @@ Automated systems cannot override human authority on high-risk actions:
 - Missing telemetry is never treated as zero risk; it is marked explicitly as `UNKNOWN`.
 - Estimated or model-derived values are never represented as physical sensor measurements.
 - Ground-truth historical mishap cases (ISS EVA 23, Apollo 15, Apollo 17, STS-37) are cited with exact NASA document IDs, page references, and transferability limitations.
+

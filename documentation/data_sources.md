@@ -67,3 +67,4 @@ MARS-GUARD integrates eight distinct planetary scientific data categories coveri
 - **Spacecraft / Agency**: Mars 2020 Perseverance — NASA / LANL / CNES / JPL
 - **Provenance**: `OBSERVED`
 - **Application**: Regolith elemental abundance (SiO2, FeO, Al2O3, MgO) and toxic perchlorate (ClO4-) detection.
+

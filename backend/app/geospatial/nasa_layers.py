@@ -182,3 +182,4 @@ class NASALayerCatalog:
     @classmethod
     def get_layer(cls, layer_id: str) -> Dict[str, Any]:
         return cls.LAYERS.get(layer_id.upper(), {})
+

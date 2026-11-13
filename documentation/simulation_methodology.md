@@ -64,3 +64,4 @@ Adapts the Pandolf-Givoni metabolic expenditure equation for planetary explorati
 $$\dot{W} = 1.5 M_{\text{total}} + 2.0 (M_{\text{total}} + M_{\text{load}}) \cdot v^2 + 18.0 \cdot \tan(\theta) \cdot 100$$
 
 Fatigue index accumulates non-linearly with total time on foot and vertical elevation gain. Sustained heart rates $> 145 \text{ bpm}$ trigger safety warnings modeled after Apollo 15 biomedical lessons.
+

@@ -262,3 +262,4 @@ export default function HistoricalSafetyIntelligencePage() {
     </div>
   )
 }
+

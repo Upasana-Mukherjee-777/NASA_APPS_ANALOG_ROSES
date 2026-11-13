@@ -330,3 +330,4 @@ class RouteOptimizer:
             "duration_hours": duration_hours,
             "waypoints": waypoints
         }
+

@@ -57,3 +57,4 @@
 2. Interact with the 3D surface model (orbital pan across Jezero basin).
 3. View Perseverance rover model, astronaut position cylinders, and active hazard cones.
 4. Click **Replay Sortie Timeline** to step through mission events.
+

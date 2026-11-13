@@ -230,3 +230,4 @@ async def get_simulated_stream():
         "station": "Base Camp Perseverance Met Station (Jezero)"
     }
     return stream_packet
+

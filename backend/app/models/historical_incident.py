@@ -32,3 +32,4 @@ class HistoricalIncident(Base):
     applicable_conditions = Column(JSON, default=list)  # ["HIGH_THERMAL_LOAD", "FINE_REGOLITH", "LONG_EVA_DURATION"]
 
     created_at = Column(DateTime, default=datetime.utcnow)
+

@@ -18,3 +18,4 @@ class MissionEvent(Base):
     lat = Column(Float, nullable=True)
     lon = Column(Float, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
+

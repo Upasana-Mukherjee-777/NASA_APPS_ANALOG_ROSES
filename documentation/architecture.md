@@ -56,3 +56,4 @@ Its central doctrine is: **"Explore intelligently. Learn from experience. Return
 - **Module 6**: Earth-Based Martian Experiment Simulation Lab (Spacesuit thermodynamics, radiation dosimetry, dust attenuation, rover terramechanics, workload).
 - **Module 7**: Historical Astronaut Incident & Experience Intelligence (NASA Mishap Investigation Board reports, NTRS citations, engineering lessons).
 - **Module 8**: Astronaut-Updated 3D Digital Twin (Three.js procedural Jezero terrain mesh, rover/astronaut tracking, timeline event replay).
+

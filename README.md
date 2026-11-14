@@ -1,6 +1,9 @@
 # ARES: RED PLANET EXPEDITION (MARS-GUARD)
 ### Immersive, AI-Powered Martian Exploration & Planetary Survival Game
-**Destination Repository**: [https://github.com/Upasana-Mukherjee-777/NASA_APPS_ANALOG_ROSES](https://github.com/Upasana-Mukherjee-777/NASA_APPS_ANALOG_ROSES)
+
+## 🚀 Live Demo
+
+🌍 **Explore Mars Guard:** https://nasa-apps-analog-roses-7.onrender.com/
 
 ---
 

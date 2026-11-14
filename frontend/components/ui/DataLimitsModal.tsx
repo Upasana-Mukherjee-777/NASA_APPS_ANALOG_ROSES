@@ -20,8 +20,8 @@ export default function DataLimitsModal() {
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-wide">Data Provenance & Operational Limits</h2>
-              <p className="text-xs text-zinc-400">Honesty disclosure: Verified NASA Planetary Data vs Real-time Simulations</p>
+              <h2 className="text-lg font-bold text-white tracking-wide">Planetary Data Provenance & Operational Limits</h2>
+              <p className="text-xs text-zinc-400">Authentic Planetary Science Datasets vs Interactive Game Telemetry</p>
             </div>
           </div>
           <button
@@ -37,37 +37,37 @@ export default function DataLimitsModal() {
           <div className="rounded-xl border border-cyan-800/40 bg-cyan-950/20 p-4">
             <div className="flex items-center gap-2 mb-2 font-mono font-bold text-cyan-300">
               <SimulatedBadge type="REAL" />
-              <span>Real NASA Planetary Observations</span>
+              <span>Authentic Planetary Science Observations (PDS Archive)</span>
             </div>
             <ul className="space-y-1.5 text-zinc-300 pl-4 list-disc marker:text-cyan-500">
               <li><strong className="text-white">Optical Imagery:</strong> MRO HiRISE (0.25m/px) & CTX controlled Jezero mosaic.</li>
               <li><strong className="text-white">Thermal:</strong> 2001 Mars Odyssey THEMIS IR Band 9 diurnal surface temperature.</li>
               <li><strong className="text-white">Spectral:</strong> MRO CRISM targeted hyperspectral mineralogy (Fe/Mg clays, carbonates).</li>
               <li><strong className="text-white">Topography:</strong> MGS MOLA + Mars Express HRSC blended digital elevation model.</li>
-              <li><strong className="text-white">Atmosphere:</strong> Perseverance MEDA pressure, ambient temp, wind, and dust Tau.</li>
-              <li><strong className="text-white">Radiation:</strong> Curiosity MSL-RAD galactic cosmic ray dose rates (26.5 uSv/h baseline).</li>
+              <li><strong className="text-white">Atmosphere:</strong> In-situ surface pressure, ambient temperature, and dust Tau.</li>
+              <li><strong className="text-white">Radiation:</strong> Gale Crater MSL-RAD galactic cosmic ray dose rates (26.5 μSv/h baseline).</li>
             </ul>
           </div>
 
           <div className="rounded-xl border border-amber-800/40 bg-amber-950/20 p-4">
             <div className="flex items-center gap-2 mb-2 font-mono font-bold text-amber-300">
               <SimulatedBadge type="SIMULATED" />
-              <span>Synthetic Overlays & Simulation Mechanics</span>
+              <span>Simulated Exploration Game Mechanics</span>
             </div>
             <ul className="space-y-1.5 text-zinc-300 pl-4 list-disc marker:text-amber-500">
-              <li><strong className="text-white">Contingency Events:</strong> Dust storms, solar particle spikes, oxygen leaks are synthetic scenarios.</li>
-              <li><strong className="text-white">Suit Telemetry:</strong> Astronaut metabolic rates, workload watts, suit coolant loop physics models.</li>
-              <li><strong className="text-white">Real-Time Traversal:</strong> Procedural rover velocity and pathing based on terrain slope friction.</li>
+              <li><strong className="text-white">Contingency Events:</strong> Dust storms, solar particle spikes, oxygen consumption are simulated gameplay challenges.</li>
+              <li><strong className="text-white">Rover Telemetry:</strong> Battery discharge rates, life support O2, and chassis integrity mechanics.</li>
+              <li><strong className="text-white">Real-Time Traversal:</strong> Interactive rover drive mechanics based on terrain slope friction physics.</li>
             </ul>
           </div>
 
           <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
             <div className="flex items-center gap-2 mb-1.5 font-bold text-zinc-200">
               <Info className="w-4 h-4 text-orange-400" />
-              <span>Attribution & Usage</span>
+              <span>Attribution & Scientific Context</span>
             </div>
             <p className="text-zinc-400 leading-relaxed">
-              NASA imagery and data products are used in accordance with the NASA Media Usage Guidelines. Credits: NASA / JPL-Caltech / University of Arizona / MSSS / JHU-APL / SwRI / CAB / ESA.
+              Scientific datasets are provided through open planetary science archives including the Planetary Data System (PDS), HiRISE (University of Arizona), USGS Astrogeology, THEMIS (ASU), and CRISM (JHU-APL). Presented via an independent, original exploration game interface without official agency endorsement or affiliation.
             </p>
           </div>
         </div>
@@ -85,4 +85,3 @@ export default function DataLimitsModal() {
     </div>
   )
 }
-

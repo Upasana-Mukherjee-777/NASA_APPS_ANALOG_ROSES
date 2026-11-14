@@ -97,7 +97,7 @@ export default function RouteLabPage() {
       riskScore: 0.68,
       maxSlope: 19.5,
       isSafe: false,
-      violationReason: 'Safety Violation: 19.5° slope exceeds NASA 18° rover rollover limit on Delta Scarp.',
+      violationReason: 'Safety Violation: 19.5° slope exceeds standard 18° rover rollover threshold on Delta Scarp.',
       costJ: +(alpha * 0.68 + beta * 0.58 + gamma * (1.45 / 3.0)).toFixed(3),
     },
   ]

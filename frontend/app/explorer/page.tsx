@@ -22,7 +22,9 @@ import {
   Flame,
   Radio,
   Wind,
-  Crosshair
+  Crosshair,
+  RadioTower,
+  HelpCircle
 } from 'lucide-react'
 import {
   ResponsiveContainer,
@@ -36,27 +38,29 @@ import {
 import { getNASALayers, getJezeroLandmarks, getHazards, getElevation } from '@/services/api'
 import { useMission } from '@/context/MissionContext'
 import SimulatedBadge from '@/components/ui/SimulatedBadge'
+import { soundEngine } from '@/lib/sound'
 
-const NASA_LAYER_PREVIEWS = [
-  { id: 'OPTICAL', name: 'Optical', sub: 'HiRISE 0.25m/px', img: '/assets/nasa/PIA24331.jpg', color: 'border-orange-500' },
-  { id: 'THERMAL', name: 'Thermal', sub: 'THEMIS Diurnal IR', img: '/assets/nasa/PIA24744.jpg', color: 'border-red-500' },
-  { id: 'SPECTRAL', name: 'Spectral', sub: 'CRISM Smectite', img: '/assets/nasa/PIA25022.jpg', color: 'border-purple-500' },
-  { id: 'TOPOGRAPHIC', name: 'Topographic', sub: 'MOLA DEM & Slopes', img: '/assets/nasa/PIA24096.jpg', color: 'border-emerald-500' },
-  { id: 'GEOPHYSICAL', name: 'Geophysical', sub: 'Crustal Field', img: '/assets/nasa/PIA26378.jpg', color: 'border-blue-500' },
-  { id: 'ATMOSPHERIC', name: 'Atmospheric', sub: 'MEDA Dust Tau', img: '/assets/nasa/PIA25290.jpg', color: 'border-amber-500' },
-  { id: 'RADIATION', name: 'Radiation', sub: 'MSL-RAD GCR Flux', img: '/assets/nasa/PIA25322.jpg', color: 'border-rose-500' },
-  { id: 'CHEMICAL', name: 'Chemical', sub: 'PIXL Elemental Map', img: '/assets/nasa/PIA24926.jpg', color: 'border-cyan-500' },
+const PLANETARY_LAYER_PREVIEWS = [
+  { id: 'OPTICAL', name: 'Optical Surface', sub: 'HiRISE 0.25m/px', img: '/assets/nasa/PIA24331.jpg', color: 'border-orange-500', desc: 'High-resolution visible spectrum orbital reconnaissance.' },
+  { id: 'THERMAL', name: 'Thermal Inertia', sub: 'THEMIS Diurnal IR', img: '/assets/nasa/PIA24744.jpg', color: 'border-red-500', desc: 'Day/night infrared thermal flux mapping rock vs dust regolith.' },
+  { id: 'SPECTRAL', name: 'Mineral Spectral', sub: 'CRISM Smectite', img: '/assets/nasa/PIA25022.jpg', color: 'border-purple-500', desc: 'Hyperspectral mapping of ancient aqueous alteration clay minerals.' },
+  { id: 'TOPOGRAPHIC', name: 'Topographic DEM', sub: 'MOLA DEM & Slopes', img: '/assets/nasa/PIA24096.jpg', color: 'border-emerald-500', desc: 'Laser altimetry elevation contours and slope safety gradients.' },
+  { id: 'CURIO_PATH', name: 'Mount Sharp Path', sub: 'Curiosity Sulfate Traverse', img: '/assets/nasa/PIA24096.jpg', color: 'border-cyan-500', desc: 'Curiosity traverse path through layered sulfate and clay minerals.' },
+  { id: 'GEOPHYSICAL', name: 'Geophysical', sub: 'Crustal Field', img: '/assets/nasa/PIA26378.jpg', color: 'border-blue-500', desc: 'Residual remanent crustal magnetic field variations.' },
+  { id: 'ATMOSPHERIC', name: 'Atmospheric Tau', sub: 'MEDA Dust Tau', img: '/assets/nasa/PIA25290.jpg', color: 'border-amber-500', desc: 'Atmospheric optical depth and airborne dust suspension.' },
+  { id: 'RADIATION', name: 'GCR Cosmic Flux', sub: 'MSL-RAD GCR Flux', img: '/assets/nasa/PIA25322.jpg', color: 'border-rose-500', desc: 'Galactic cosmic ray and solar particle dose rates.' },
 ]
 
 const JEZERO_LANDMARKS = [
-  { id: 'lm-1', name: 'Octavia E. Butler Landing', x: 25, y: 72, lat: 18.380, lon: 77.580, elev: -2580, slope: 4.2, img: '/assets/nasa/PIA24331.jpg', desc: 'Perseverance touchdown datum.' },
+  { id: 'lm-1', name: 'Octavia E. Butler Landing', x: 25, y: 72, lat: 18.380, lon: 77.580, elev: -2580, slope: 4.2, img: '/assets/nasa/PIA24331.jpg', desc: 'Planetary expedition touchdown datum.' },
   { id: 'lm-2', name: 'Kodiak Butte Isolated Mesa', x: 42, y: 55, lat: 18.362, lon: 77.545, elev: -2515, slope: 14.8, img: '/assets/nasa/PIA24814.jpg', desc: 'Stratified delta remnant with bottomset beds.' },
   { id: 'lm-3', name: 'Western Delta Front Outcrop', x: 65, y: 38, lat: 18.420, lon: 77.520, elev: -2480, slope: 12.0, img: '/assets/nasa/PIA26252.jpg', desc: 'Clay-rich mudstone core caching zone.' },
-  { id: 'lm-4', name: 'Neretva Outflow Valley', x: 78, y: 22, lat: 18.441, lon: 77.492, elev: -2420, slope: 8.5, img: '/assets/nasa/PIA26207.jpg', desc: 'Ancient river breach into Jezero paleolake.' },
+  { id: 'lm-4', name: 'Neretva Outflow Valley', x: 78, y: 22, lat: 18.441, lon: 77.492, elev: -2420, slope: 19.4, desc: 'Ancient high-energy river breach into Jezero paleolake.' },
+  { id: 'lm-5', name: 'Mount Sharp Sulfate Traverse', x: 50, y: 48, lat: -5.400, lon: 137.800, elev: -4150, slope: 11.2, img: '/assets/nasa/PIA24096.jpg', desc: 'Curiosity traverse path across sulfate-bearing stratigraphy.' }
 ]
 
 export default function MapExplorerPage() {
-  const { playClick, playChime } = useMission()
+  const { playClick, playChime, setBuddyMessage, addXP } = useMission()
   const [activeLayer, setActiveLayer] = useState<string>('OPTICAL')
   const [zoom, setZoom] = useState<number>(1.0)
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
@@ -72,9 +76,10 @@ export default function MapExplorerPage() {
 
   // Dynamic Route Elevation Profile
   const [elevationProfile, setElevationProfile] = useState<any[]>([])
+  const [scanPulse, setScanPulse] = useState(false)
 
   useEffect(() => {
-    // Generate high resolution 20-point elevation profile across Jezero corridor
+    // Generate high resolution 20-point elevation profile across corridor
     const pts = []
     for (let i = 0; i <= 20; i++) {
       const dist = (i * 0.19).toFixed(2)
@@ -122,7 +127,19 @@ export default function MapExplorerPage() {
     playClick()
   }
 
-  const activeLayerConfig = NASA_LAYER_PREVIEWS.find(l => l.id === activeLayer) || NASA_LAYER_PREVIEWS[0]
+  const triggerMapScan = () => {
+    playClick()
+    soundEngine.playScan()
+    setScanPulse(true)
+    setTimeout(() => {
+      setScanPulse(false)
+      soundEngine.playDiscovery()
+      addXP(40)
+      setBuddyMessage(`Scanned ${selectedPin.name}! Slope: ${selectedPin.slope}°, Elevation: ${selectedPin.elev}m. Data synchronized with mission ledger.`)
+    }, 1200)
+  }
+
+  const activeLayerConfig = PLANETARY_LAYER_PREVIEWS.find(l => l.id === activeLayer) || PLANETARY_LAYER_PREVIEWS[0]
 
   return (
     <div className="relative w-full h-[calc(100vh-6rem)] min-h-[640px] overflow-hidden bg-black flex flex-col justify-between">
@@ -146,6 +163,20 @@ export default function MapExplorerPage() {
 
         {/* Tactical Planetary Grid Lines */}
         <div className="absolute inset-0 mars-grid-pattern opacity-40 pointer-events-none" />
+
+        {/* Radar Pulse Sweep Ring Animation */}
+        {scanPulse && (
+          <div
+            className="absolute rounded-full border-2 border-cyan-400 bg-cyan-500/20 pointer-events-none animate-ping duration-1000"
+            style={{
+              left: `${selectedPin.x}%`,
+              top: `${selectedPin.y}%`,
+              width: '180px',
+              height: '180px',
+              transform: 'translate(-50%, -50%)'
+            }}
+          />
+        )}
 
         {/* Glowing Traversal Route SVG Overlay */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -203,12 +234,12 @@ export default function MapExplorerPage() {
       </div>
 
       {/* Top Floating Glass Controls & Coordinate Prober */}
-      <div className="relative z-20 p-4 flex items-center justify-between pointer-events-none">
+      <div className="relative z-20 p-4 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
         {/* Layer Badge & Active Info */}
         <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-2xl border border-white/10 bg-zinc-950/85 backdrop-blur-md shadow-xl">
           <SimulatedBadge type="REAL" />
           <span className="text-xs font-mono font-bold text-white tracking-wide">
-            {activeLayerConfig.name.toUpperCase()} MAP
+            {activeLayerConfig.name.toUpperCase()}
           </span>
           <span className="text-[10px] font-mono text-zinc-400">({activeLayerConfig.sub})</span>
         </div>
@@ -224,8 +255,16 @@ export default function MapExplorerPage() {
           <span className="text-cyan-400 font-bold">{probeCoords.elev}m MOLA</span>
         </div>
 
-        {/* Zoom & Pan Controls */}
+        {/* Zoom & Scan Controls */}
         <div className="pointer-events-auto flex items-center gap-1.5 p-1 rounded-2xl border border-white/10 bg-zinc-950/85 backdrop-blur-md shadow-xl">
+          <button
+            onClick={triggerMapScan}
+            className="flex items-center gap-1.5 rounded-xl bg-cyan-600 px-3 py-1.5 text-xs font-mono font-bold text-white hover:bg-cyan-500 transition shadow-md"
+            title="Scan currently selected landmark"
+          >
+            <RadioTower className="w-3.5 h-3.5" />
+            <span>Scan Landmark</span>
+          </button>
           <button
             onClick={() => { playClick(); setZoom(z => Math.min(2.5, z + 0.25)); }}
             className="p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
@@ -282,10 +321,10 @@ export default function MapExplorerPage() {
         </div>
       </div>
 
-      {/* Horizontal Strip of 8 NASA Image Thumbnails with Live Preview */}
+      {/* Horizontal Strip of 8 Planetary Image Thumbnails with Live Preview */}
       <div className="relative z-20 px-4 pb-2 pointer-events-auto">
         <div className="flex items-center gap-2 overflow-x-auto py-2 no-scrollbar">
-          {NASA_LAYER_PREVIEWS.map(layer => {
+          {PLANETARY_LAYER_PREVIEWS.map(layer => {
             const isSelected = activeLayer === layer.id
             return (
               <button
@@ -294,7 +333,7 @@ export default function MapExplorerPage() {
                   playClick()
                   setActiveLayer(layer.id)
                 }}
-                className={`relative flex-shrink-0 w-28 h-16 rounded-xl overflow-hidden border-2 transition-all touch-react group ${
+                className={`relative flex-shrink-0 w-32 h-16 rounded-xl overflow-hidden border-2 transition-all touch-react group ${
                   isSelected
                     ? `${layer.color} scale-105 shadow-lg`
                     : 'border-zinc-800 opacity-60 hover:opacity-100'

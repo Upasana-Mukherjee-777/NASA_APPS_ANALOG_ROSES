@@ -64,7 +64,7 @@ export default function Navbar() {
             <div className="flex items-center gap-2">
               <span className="font-mono text-lg font-bold tracking-wider text-zinc-100">MARS-GUARD</span>
               <span className="rounded bg-orange-950/80 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-orange-400 border border-orange-800/60">
-                NASA SPACE APPS
+                EXPEDITION HUD v2.5
               </span>
             </div>
             <p className="text-[11px] text-zinc-400">Explore intelligently. Return safely.</p>

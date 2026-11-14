@@ -27,7 +27,7 @@ export const NAV_ITEMS = [
   { label: 'Route Comparison Lab', href: '/planner', icon: Route, badge: 'A* Multi' },
   { label: 'AI Risk Intelligence', href: '/risk', icon: Brain, badge: 'Dynamic ML' },
   { label: 'Martian Experiment Lab', href: '/experiments', icon: FlaskConical, badge: 'Class A-D' },
-  { label: 'Historical Safety RAG', href: '/history', icon: History, badge: 'NASA Docs' },
+  { label: 'Historical Safety RAG', href: '/history', icon: History, badge: 'RAG Archive' },
   { label: '3D Digital Twin', href: '/digital-twin', icon: Box, badge: 'Three.js' },
   { label: 'Multimodal Data Studio', href: '/datasets', icon: Database, badge: '8 Layers' },
   { label: 'Astronaut Field Console', href: '/field', icon: UserCheck, badge: 'Ingestion' },
@@ -86,7 +86,7 @@ export default function Sidebar() {
           <div className="bg-emerald-500 h-1.5 rounded-full w-[98%]"></div>
         </div>
         <p className="text-[10px] text-zinc-400 leading-tight">
-          NASA Jezero Corridor datum: MOLA -2580m. Multi-layer RAG active.
+          Jezero Corridor datum: MOLA -2580m. Multi-layer planetary telemetry active.
         </p>
       </div>
     </aside>

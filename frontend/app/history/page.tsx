@@ -121,7 +121,7 @@ export default function SafetyArchivePage() {
       <div>
         <div className="flex items-center gap-2 mb-1">
           <SimulatedBadge type="REAL" />
-          <span className="text-xs font-mono font-bold text-zinc-400">NASA MISHAP INVESTIGATION ARCHIVE</span>
+          <span className="text-xs font-mono font-bold text-zinc-400">HISTORICAL FLIGHT SAFETY ARCHIVE</span>
         </div>
         <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
           Safety Intelligence & Past Lessons

@@ -178,7 +178,7 @@ export default function HUDStrip() {
                 setShowDataLimits(true)
               }}
               className="p-1.5 rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-700 transition"
-              title="View NASA Data Provenance & Real vs Simulated Limits"
+              title="View Planetary Data Provenance & Real vs Simulated Limits"
             >
               <Info className="w-3.5 h-3.5" />
             </button>

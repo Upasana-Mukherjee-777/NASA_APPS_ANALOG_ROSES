@@ -35,7 +35,7 @@ export interface GuidedStep {
 
 export const GUIDED_STEPS: GuidedStep[] = [
   { id: 1, title: 'Mars Global Recon', path: '/', action: 'Select Jezero Crater Hotspot', hint: 'Tap the glowing beacon on Jezero Crater to initiate EVA-07 entry.' },
-  { id: 2, title: 'Multi-Layer GIS', path: '/explorer', action: 'Inspect 8 NASA Layers', hint: 'Toggle the layer strip below to preview HiRISE, THEMIS & CRISM datasets.' },
+  { id: 2, title: 'Multi-Layer GIS', path: '/explorer', action: 'Inspect 8 Planetary Layers', hint: 'Toggle the layer strip below to preview HiRISE, THEMIS & CRISM datasets.' },
   { id: 3, title: 'Route Lab', path: '/planner', action: 'Tune Speed vs Comfort', hint: 'Adjust the slider to see Aegis, Apex and Ares candidate routes re-rank live.' },
   { id: 4, title: 'Mission Simulator', path: '/simulation', action: 'Trigger a Contingency', hint: 'Select a card from the Disaster Deck to test real-time AI mitigation.' },
   { id: 5, title: 'Safety Archive', path: '/history', action: 'Examine Past Lessons', hint: 'Check the transferability of Apollo and ISS incident reports to Mars.' },
@@ -51,6 +51,10 @@ interface MissionContextType {
   playClick: () => void
   playChime: () => void
   playWarning: () => void
+  playScan: () => void
+  beginnerMode: boolean
+  setBeginnerMode: (v: boolean) => void
+  toggleBeginnerMode: () => void
   guidedMode: boolean
   setGuidedMode: (v: boolean) => void
   currentStep: number
@@ -102,6 +106,10 @@ export function MissionProvider({ children }: { children: React.ReactNode }) {
   const [buddyMessage, setBuddyMessage] = useState('Greetings Explorer! Welcome to MARS-GUARD. Ready for EVA-07?')
   const [missionXP, setMissionXP] = useState(350)
   const [badges, setBadges] = useState<string[]>(['First Contact', 'Jezero Scout'])
+  const [beginnerMode, setBeginnerMode] = useState(false)
+
+  const toggleBeginnerMode = () => setBeginnerMode(b => !b)
+  const playScan = () => soundEngine.playScan()
 
   const tickTimer = useRef<NodeJS.Timeout | null>(null)
 
@@ -223,6 +231,10 @@ export function MissionProvider({ children }: { children: React.ReactNode }) {
         playClick,
         playChime,
         playWarning,
+        playScan,
+        beginnerMode,
+        setBeginnerMode,
+        toggleBeginnerMode,
         guidedMode,
         setGuidedMode,
         currentStep,

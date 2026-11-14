@@ -207,7 +207,7 @@ export default function DataStudioGalleryPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <SimulatedBadge type="REAL" />
-            <span className="text-xs font-mono font-bold text-zinc-400">NASA PDS SCIENTIFIC DATA STUDIO</span>
+            <span className="text-xs font-mono font-bold text-zinc-400">PLANETARY OBSERVATION STUDIO (PDS ARCHIVE)</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
             Planetary Gallery Wall
@@ -280,7 +280,7 @@ export default function DataStudioGalleryPage() {
           </div>
 
           <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-400 font-mono">
-            <span>NASA Attribution: Verified Planetary Data System (PDS) Release</span>
+            <span>Data Provenance: Verified Planetary Data System (PDS) Scientific Release</span>
             <button
               onClick={() => {
                 playClick()

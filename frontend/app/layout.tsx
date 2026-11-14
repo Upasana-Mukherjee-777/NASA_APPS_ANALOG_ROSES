@@ -4,12 +4,12 @@ import { MissionProvider } from '@/context/MissionContext'
 import HUDStrip from '@/components/navigation/HUDStrip'
 import GuidedMissionBanner from '@/components/navigation/GuidedMissionBanner'
 import MissionDock from '@/components/navigation/MissionDock'
-import BuddyCompanion from '@/components/navigation/BuddyCompanion'
+import AeroCompanion from '@/components/companion/AeroCompanion'
 import DataLimitsModal from '@/components/ui/DataLimitsModal'
 
 export const metadata: Metadata = {
-  title: 'MARS-GUARD — Martian Adaptive Risk, Safety & Guidance Platform',
-  description: 'AI-Powered Game-Quality Space Exploration & Safety Platform for NASA Space Apps Challenge',
+  title: 'MARS-GUARD — Martian Exploration & Survival Simulator',
+  description: 'AI-Powered Interactive Martian Exploration Game with Autonomous AI Companion, Real Planetary Datasets, and Rover Survival Simulation.',
 }
 
 export default function RootLayout({
@@ -35,10 +35,10 @@ export default function RootLayout({
           {/* Floating Circular Mission Dock */}
           <MissionDock />
 
-          {/* Interactive MARS-GUARD Buddy Character */}
-          <BuddyCompanion />
+          {/* Adorable Animated AI Companion Character PIP */}
+          <AeroCompanion />
 
-          {/* NASA Data Provenance & Real vs Simulated Modal */}
+          {/* Planetary Data Provenance & Real vs Simulated Modal */}
           <DataLimitsModal />
         </MissionProvider>
       </body>

@@ -191,3 +191,4 @@ export default function BeginnerOnboardingModal({ isOpen, onClose }: BeginnerOnb
     </div>
   )
 }
+

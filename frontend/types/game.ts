@@ -96,3 +96,4 @@ export interface AchievementBadge {
   unlockedAt?: string
   iconKey: string
 }
+
